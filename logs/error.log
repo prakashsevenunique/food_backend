@@ -1,0 +1,43 @@
+2025-05-05T11:14:33.365Z [ERROR]: MongoDB connection error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+2025-05-05T11:16:41.369Z [ERROR]: MongoDB connection error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+2025-05-06T06:13:11.177Z [ERROR]: MongoDB connection error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+2025-05-06T06:34:03.186Z [ERROR]: sendOTP is not defined - /api/users/send-otp - POST - ::1
+2025-05-06T06:40:12.162Z [ERROR]: sendOTP is not defined - /api/users/send-otp - POST - ::1
+2025-05-06T07:06:07.704Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:08:52.204Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:24:17.643Z [ERROR]: Socket 'secureConnect' timed out after 31836ms (connectTimeoutMS: 30000) - /api/users/send-otp - POST - ::1
+2025-05-06T07:25:11.067Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:27:48.354Z [ERROR]: MongoDB connection error: Server selection timed out after 30000 ms
+2025-05-06T07:31:01.661Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:34:54.856Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:36:30.113Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:36:35.258Z [ERROR]: Not Found - ///C:/Users/rahul/Food-Delivery-Backend/src/controllers/userController.js:41:11/n - ///C:/Users/rahul/Food-Delivery-Backend/src/controllers/userController.js:41:11/n - GET - ::1
+2025-05-06T07:36:36.250Z [ERROR]: Not Found - /favicon.ico - /favicon.ico - GET - ::1
+2025-05-06T07:40:28.689Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:51:10.305Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:51:28.317Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:52:44.510Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:54:29.776Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T07:56:15.333Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T08:49:44.503Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T08:50:11.551Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T08:53:46.037Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T08:58:10.387Z [ERROR]: E11000 duplicate key error collection: test.users index: email_1 dup key: { email: null } - /api/users/send-otp - POST - ::1
+2025-05-06T09:00:37.188Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T09:03:05.173Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T09:06:14.163Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T09:06:48.861Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T09:07:13.041Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T09:08:31.741Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T09:09:05.859Z [ERROR]: Failed to send OTP - /api/users/send-otp - POST - ::1
+2025-05-06T10:47:18.699Z [ERROR]: User validation failed: email: Please provide a valid email - /api/users/verify-otp - POST - ::1
+2025-05-06T11:11:57.322Z [ERROR]: User validation failed: mobileNumber: Please provide a phone number - /api/users/verify-otp - POST - ::1
+2025-05-06T11:14:09.456Z [ERROR]: Not authorized, no token - /api/users - GET - ::1
+2025-05-06T11:15:50.683Z [ERROR]: Not authorized as an admin - /api/users - GET - ::1
+2025-05-06T11:16:44.238Z [ERROR]: Schema hasn't been registered for model "Address".
+Use mongoose.model(name, schema) - /api/users/profile - GET - ::1
+2025-05-06T11:18:07.702Z [ERROR]: Schema hasn't been registered for model "Address".
+Use mongoose.model(name, schema) - /api/users/profile - GET - ::1
+2025-05-06T12:16:09.028Z [ERROR]: Schema hasn't been registered for model "Address".
+Use mongoose.model(name, schema) - /api/users/profile - GET - ::1
+2025-05-08T05:07:45.374Z [ERROR]: E11000 duplicate key error collection: test.users index: phone_1 dup key: { phone: null } - /api/users/verify-otp - POST - ::1
