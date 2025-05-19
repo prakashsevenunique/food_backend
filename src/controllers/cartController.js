@@ -117,7 +117,6 @@ export const addToCart = asyncHandler(async (req, res) => {
       items: [],
       totalItems: 0,
       subtotal: 0,
-      taxAmount: 0,
       deliveryFee: restaurant.deliveryFee,
       finalAmount: 0,
     });

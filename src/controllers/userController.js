@@ -60,7 +60,7 @@ export const sendSMSController = async (req, res) => {
 };
 
 export const verifyOTP = asyncHandler(async (req, res) => {
-  const { mobileNumber, otp, role, fullName } = req.body;
+  const { mobileNumber, otp, fullName } = req.body;
 
   const otpEntry = await Otp.findOne({ mobileNumber });
 
