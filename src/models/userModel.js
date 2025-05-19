@@ -5,11 +5,7 @@ const userSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: [false, "Please provide a name"],
+      required: false,
       trim: true,
     },
     email: {
@@ -23,7 +19,7 @@ const userSchema = new mongoose.Schema(
     },
     mobileNumber: {
       type: String,
-      required: [true, "Please provide a mobile number"],
+      required: false,
       unique: true,
     },
     role: {
@@ -35,6 +31,7 @@ const userSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Address",
+        required: false,
       },
     ],
     defaultAddress: {
@@ -44,6 +41,7 @@ const userSchema = new mongoose.Schema(
     profilePicture: {
       type: String,
       default: "default-profile.jpg",
+      required: false,
     },
     favorites: [
       {
@@ -60,7 +58,6 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     refreshToken: String,
-
     wallet: {
       type: Number,
       default: 0,
@@ -69,22 +66,25 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    password: {
+      type: String,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// Hash password before save
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    next();
-  } else {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  }
+  if (!this.isModified("password")) return next();
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
+// Compare password method
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
