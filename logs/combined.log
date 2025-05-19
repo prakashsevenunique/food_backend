@@ -932,3 +932,6 @@ Use mongoose.model(name, schema) - /api/users/profile - GET - ::1
 2025-05-19T04:35:52.223Z [INFO]: Connected to MongoDB
 2025-05-19T05:00:18.708Z [INFO]: Server running on port 4080
 2025-05-19T05:00:20.285Z [INFO]: Connected to MongoDB
+2025-05-19T05:13:19.903Z [INFO]: Server running on port 4080
+2025-05-19T05:13:20.950Z [INFO]: Connected to MongoDB
+2025-05-19T05:13:44.897Z [ERROR]: Not authorized, token failed - /api/users/profile - GET - ::1

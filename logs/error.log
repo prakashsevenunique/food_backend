@@ -297,3 +297,4 @@ Use mongoose.model(name, schema) - /api/users/profile - GET - ::1
 2025-05-18T06:00:46.036Z [ERROR]: Not authorized, token failed - /api/categories - POST - ::1
 2025-05-18T08:56:24.817Z [ERROR]: Not authorized, no token - /api/categories - POST - ::ffff:192.168.1.32
 2025-05-18T10:06:55.598Z [ERROR]: Not Found - /auth/verify-otp - /auth/verify-otp - POST - ::ffff:192.168.1.32
+2025-05-19T05:13:44.897Z [ERROR]: Not authorized, token failed - /api/users/profile - GET - ::1
