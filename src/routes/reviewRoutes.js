@@ -5,7 +5,6 @@ import { validateRequest } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-// Placeholder for review controller (to be implemented)
 const reviewController = {
   createReview: (req, res) => {
     res.status(200).json({ message: 'Review created successfully' });

@@ -16,7 +16,6 @@ import { validateRequest } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
 router.route('/')
   .get(getRestaurants)
   .post(

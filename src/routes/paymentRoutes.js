@@ -5,7 +5,6 @@ import { validateRequest } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-// Placeholder for payment controller (to be implemented)
 const paymentController = {
   createPayment: (req, res) => {
     res.status(200).json({ message: 'Payment created successfully' });

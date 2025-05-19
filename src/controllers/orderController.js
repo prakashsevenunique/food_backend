@@ -6,16 +6,12 @@ import User from '../models/userModel.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 
-// Helper function to generate order number
 const generateOrderNumber = () => {
   const timestamp = new Date().getTime().toString().slice(-8);
   const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
   return `ORD-${timestamp}-${random}`;
 };
 
-// @desc    Create new order
-// @route   POST /api/orders
-// @access  Private
 export const createOrder = asyncHandler(async (req, res) => {
   const {
     cartId,
@@ -103,9 +99,6 @@ export const createOrder = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get logged in user orders
-// @route   GET /api/orders/myorders
-// @access  Private
 export const getMyOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -129,9 +122,6 @@ export const getMyOrders = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get order by ID
-// @route   GET /api/orders/:id
-// @access  Private
 export const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id)
     .populate('restaurant', 'name address contact')
@@ -166,9 +156,6 @@ export const getOrderById = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Update order status
-// @route   PATCH /api/orders/:id/status
-// @access  Private/Restaurant/Admin
 export const updateOrderStatus = asyncHandler(async (req, res) => {
   const { status, note } = req.body;
   const order = await Order.findById(req.params.id);
@@ -219,9 +206,6 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Cancel order
-// @route   PATCH /api/orders/:id/cancel
-// @access  Private
 export const cancelOrder = asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const order = await Order.findById(req.params.id);
@@ -284,9 +268,6 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Assign delivery partner
-// @route   PATCH /api/orders/:id/assign-delivery
-// @access  Private/Admin/Restaurant
 export const assignDeliveryPartner = asyncHandler(async (req, res) => {
   const { deliveryPartnerId } = req.body;
   const order = await Order.findById(req.params.id);
@@ -340,9 +321,6 @@ export const assignDeliveryPartner = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get restaurant orders
-// @route   GET /api/orders/restaurant
-// @access  Private/Restaurant
 export const getRestaurantOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -388,9 +366,6 @@ export const getRestaurantOrders = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get all orders (admin only)
-// @route   GET /api/orders
-// @access  Private/Admin
 export const getAllOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -437,9 +412,6 @@ export const getAllOrders = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get delivery partner orders
-// @route   GET /api/orders/delivery
-// @access  Private/Delivery
 export const getDeliveryOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;

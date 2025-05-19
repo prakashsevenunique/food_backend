@@ -4,9 +4,6 @@ import Review from '../models/reviewModel.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 
-// @desc    Get all restaurants
-// @route   GET /api/restaurants
-// @access  Public
 export const getRestaurants = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -94,9 +91,6 @@ export const getRestaurants = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get restaurant by ID
-// @route   GET /api/restaurants/:id
-// @access  Public
 export const getRestaurantById = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findById(req.params.id)
     .populate('cuisine', 'name')
@@ -120,9 +114,6 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Create a restaurant
-// @route   POST /api/restaurants
-// @access  Private/Restaurant
 export const createRestaurant = asyncHandler(async (req, res) => {
   const {
     name,
@@ -172,9 +163,6 @@ export const createRestaurant = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update a restaurant
-// @route   PUT /api/restaurants/:id
-// @access  Private/Restaurant
 export const updateRestaurant = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findById(req.params.id);
 
@@ -207,9 +195,6 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete a restaurant
-// @route   DELETE /api/restaurants/:id
-// @access  Private/Admin
 export const deleteRestaurant = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findById(req.params.id);
 
@@ -224,9 +209,6 @@ export const deleteRestaurant = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Restaurant removed' });
 });
 
-// @desc    Get all menu items for a restaurant
-// @route   GET /api/restaurants/:id/menu
-// @access  Public
 export const getRestaurantMenu = asyncHandler(async (req, res) => {
   const foodItems = await FoodItem.find({
     restaurant: req.params.id,
@@ -239,9 +221,6 @@ export const getRestaurantMenu = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get restaurant reviews
-// @route   GET /api/restaurants/:id/reviews
-// @access  Public
 export const getRestaurantReviews = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -266,9 +245,6 @@ export const getRestaurantReviews = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Search nearby restaurants
-// @route   GET /api/restaurants/nearby
-// @access  Public
 export const getNearbyRestaurants = asyncHandler(async (req, res) => {
   const { lat, lng, distance = 5 } = req.query; // distance in km, default 5km
 
@@ -299,9 +275,6 @@ export const getNearbyRestaurants = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Update restaurant images
-// @route   PUT /api/restaurants/:id/images
-// @access  Private/Restaurant
 export const updateRestaurantImages = asyncHandler(async (req, res) => {
   const { images, coverImage } = req.body;
   const restaurant = await Restaurant.findById(req.params.id);

@@ -21,28 +21,14 @@ const categorySchema = new mongoose.Schema(
     type: {
       type: String,
       enum: ['cuisine', 'food-type', 'meal-time'],
-      default: 'cuisine',
-    },
-    parent: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      default: null,
-    },
+      default: 'food-type',
+    }
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 
-// Virtual for subcategories
-categorySchema.virtual('subcategories', {
-  ref: 'Category',
-  localField: '_id',
-  foreignField: 'parent',
-  justOne: false,
-});
 
 const Category = mongoose.model('Category', categorySchema);
 

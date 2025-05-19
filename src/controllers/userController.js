@@ -4,8 +4,7 @@ import Otp from "../models/otp.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
 import { logger } from "../utils/logger.js";
-import Address from '../models/addressModel.js';
-
+import Address from "../models/addressModel.js";
 
 export const generateOtp = () => {
   // Generate a random 6-digit OTP
@@ -18,7 +17,7 @@ export const sendSMSController = async (req, res) => {
     const { mobileNumber } = req.body;
 
     if (!mobileNumber) {
-      return res.status(400).json({ message: 'Mobile number is required' });
+      return res.status(400).json({ message: "Mobile number is required" });
     }
 
     const otp = generateOtp();
@@ -33,12 +32,12 @@ export const sendSMSController = async (req, res) => {
 
     // Send SMS via Fast2SMS
     const response = await axios.post(
-      'https://www.fast2sms.com/dev/bulkV2',
+      "https://www.fast2sms.com/dev/bulkV2",
       {
-        route: 'q',
-        sender_id: 'FINUNI',
+        route: "q",
+        sender_id: "FINUNI",
         message: `Dear user, Your OTP for login is ${otp}. Do not share with anyone - Finunique Small Pvt. Ltd.`,
-        language: 'english',
+        language: "english",
         numbers: mobileNumber,
       },
       {
@@ -51,44 +50,51 @@ export const sendSMSController = async (req, res) => {
     const user = await User.findOne({ phone: mobileNumber });
 
     return res.json({
-      message: 'OTP sent successfully',
+      message: "OTP sent successfully",
       existing: !!user,
     });
   } catch (error) {
-    console.error('Error in sendSMSController:', error.message);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error("Error in sendSMSController:", error.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
 export const verifyOTP = asyncHandler(async (req, res) => {
-  const { mobileNumber, otp, role, name, email } = req.body;
+  const { mobileNumber, otp, role } = req.body;
 
   const otpEntry = await Otp.findOne({ mobileNumber });
 
   if (!otpEntry || otpEntry.expiresAt < Date.now()) {
-    return res.status(400).json({ message: 'OTP expired or not found' });
+    return res.status(400).json({ message: "OTP expired or not found" });
   }
 
   if (otpEntry.code !== otp) {
-    return res.status(400).json({ message: 'Invalid OTP' });
+    return res.status(400).json({ message: "Invalid OTP" });
   }
 
-  // OTP is valid – delete it
+  // Delete OTP entry
   await Otp.deleteOne({ mobileNumber });
 
-  // Check if user exists
+  // Find or create user
   let user = await User.findOne({ mobileNumber });
 
   if (!user) {
     user = await User.create({
       mobileNumber,
-      name: name || '',           // Optional
-      email: email || '',         // Optional
-      role: ['user', 'restaurant', 'delivery'].includes(role) ? role : 'user',
+      role: ["user", "restaurant", "delivery", "admin"].includes(role) ? role : "user",
       isVerified: true,
+      wallet: 0,
+      walletLastUpdated: new Date(),
     });
   } else {
     user.isVerified = true;
+
+    // Initialize wallet if not already present
+    if (!user.wallet || typeof user.wallet !== "number") {
+      user.wallet = 0;
+      user.walletLastUpdated = new Date();
+    }
+
     await user.save();
   }
 
@@ -97,14 +103,11 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     data: {
       _id: user._id,
       mobileNumber: user.mobileNumber,
-      name: user.name,
-      email: user.email,
       role: user.role,
       token: generateToken(user._id),
     },
   });
 });
-
 
 export const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate("addresses");
@@ -115,7 +118,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
       data: {
         _id: user._id,
         name: user.name,
-        phone: user.phone,
+        mobileNumber: user.mobileNumber,
         role: user.role,
         addresses: user.addresses,
         defaultAddress: user.defaultAddress,
@@ -132,7 +135,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 export const updateUserProfile = asyncHandler(async (req, res) => {
   const { name, mobileNumber, profilePicture, addresses } = req.body;
 
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user.id);
 
   if (!user) {
     res.status(404);
@@ -142,22 +145,26 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   // Handle mobileNumber update with OTP verification
   if (mobileNumber && mobileNumber !== user.mobileNumber) {
     if (!otp) {
-      return res.status(400).json({ message: 'OTP is required to update mobile number' });
+      return res
+        .status(400)
+        .json({ message: "OTP is required to update mobile number" });
     }
 
     const otpEntry = await Otp.findOne({ mobileNumber });
 
     if (!otpEntry || otpEntry.expiresAt < Date.now()) {
-      return res.status(400).json({ message: 'OTP expired or not found' });
+      return res.status(400).json({ message: "OTP expired or not found" });
     }
 
     if (otpEntry.code !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
+      return res.status(400).json({ message: "Invalid OTP" });
     }
 
     const existingUser = await User.findOne({ mobileNumber });
     if (existingUser && existingUser._id.toString() !== user._id.toString()) {
-      return res.status(400).json({ message: 'Mobile number already in use by another user' });
+      return res
+        .status(400)
+        .json({ message: "Mobile number already in use by another user" });
     }
 
     user.mobileNumber = mobileNumber;

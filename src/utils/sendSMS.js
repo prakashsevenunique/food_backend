@@ -7,7 +7,7 @@ const sendOtp = async (phone, message) => {
     sender_id: 'FSTSMS',
     message: message,
     language: 'english',
-    route: 'p', // for transactional use 'p', for promotional use 't'
+    route: 'p',
     numbers: phone.toString(),
   };
 

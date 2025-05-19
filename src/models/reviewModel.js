@@ -57,10 +57,8 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
-// Compound index to ensure one review per user per order
 reviewSchema.index({ user: 1, order: 1 }, { unique: true });
 
-// Index for restaurant to quickly fetch all reviews for a restaurant
 reviewSchema.index({ restaurant: 1, createdAt: -1 });
 
 const Review = mongoose.model('Review', reviewSchema);

@@ -4,9 +4,6 @@ import Restaurant from '../models/restaurantModel.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 
-// @desc    Get or create user cart
-// @route   GET /api/cart
-// @access  Private
 export const getCart = asyncHandler(async (req, res) => {
   // Find user's cart or create a new one
   let cart = await Cart.findOne({ user: req.user._id })
@@ -84,9 +81,6 @@ export const getCart = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Add item to cart
-// @route   POST /api/cart
-// @access  Private
 export const addToCart = asyncHandler(async (req, res) => {
   const { foodItemId, quantity, customizations } = req.body;
 
@@ -181,6 +175,7 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
+  await cart.save();
   // Recalculate cart totals
   await recalculateCart(cart._id);
   
@@ -200,9 +195,6 @@ export const addToCart = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Update cart item quantity
-// @route   PATCH /api/cart/:itemId
-// @access  Private
 export const updateCartItem = asyncHandler(async (req, res) => {
   const { quantity, customizations } = req.body;
   const { itemId } = req.params;
@@ -281,9 +273,6 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Remove item from cart
-// @route   DELETE /api/cart/:itemId
-// @access  Private
 export const removeCartItem = asyncHandler(async (req, res) => {
   const { itemId } = req.params;
 
@@ -332,9 +321,6 @@ export const removeCartItem = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Clear cart
-// @route   DELETE /api/cart
-// @access  Private
 export const clearCart = asyncHandler(async (req, res) => {
   // Find and update user's cart
   const cart = await Cart.findOneAndUpdate(
@@ -370,67 +356,79 @@ export const clearCart = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Apply coupon to cart
-// @route   POST /api/cart/apply-coupon
-// @access  Private
 export const applyCoupon = asyncHandler(async (req, res) => {
   const { couponCode } = req.body;
 
-  // Find user's cart
   const cart = await Cart.findOne({ user: req.user._id });
-  
+
   if (!cart) {
     res.status(404);
     throw new Error('Cart not found');
   }
 
-  // Check if cart has items
   if (!cart.items || cart.items.length === 0) {
     res.status(400);
     throw new Error('Cart is empty');
   }
 
-  // This would be where you validate the coupon against a Coupon model
-  // For now, we'll simulate a discount
-  
-  // Example coupon logic:
-  let discountAmount = 0;
-  if (couponCode === 'WELCOME10') {
-    // 10% discount
-    discountAmount = cart.subtotal * 0.1;
-  } else if (couponCode === 'FLAT100') {
-    // Flat 100 off
-    discountAmount = 100;
-  } else {
+  if (!cart.subtotal || cart.subtotal <= 0) {
+    res.status(400);
+    throw new Error('Invalid subtotal. Cannot apply coupon.');
+  }
+
+  if (cart.couponApplied) {
+    res.status(400);
+    throw new Error('Coupon already applied. Please clear cart to apply a new one.');
+  }
+
+  const coupon = await Coupon.findOne({ code: couponCode });
+
+  if (!coupon) {
     res.status(400);
     throw new Error('Invalid coupon code');
   }
 
-  // Apply discount to cart
+  if (cart.subtotal < coupon.minimumAmount) {
+    res.status(400);
+    throw new Error(`Minimum order amount should be ₹${coupon.minimumAmount}`);
+  }
+
+  let discountAmount = 0;
+
+  if (coupon.discountType === 'flat') {
+    discountAmount = coupon.discountValue;
+  } else if (coupon.discountType === 'percent') {
+    discountAmount = (cart.subtotal * coupon.discountValue) / 100;
+  }
+
+  if (discountAmount > cart.subtotal) {
+    discountAmount = cart.subtotal;
+  }
+
   cart.discountAmount = discountAmount;
-  cart.finalAmount = cart.subtotal + cart.taxAmount + cart.deliveryFee + cart.packagingCharges - discountAmount;
-  cart.couponApplied = couponCode; // In a real app, this would be the coupon document ID
-  
+  cart.couponApplied = coupon._id; 
+  cart.finalAmount =
+    cart.subtotal + cart.taxAmount + cart.deliveryFee + (cart.packagingCharges || 0) - discountAmount;
+
   await cart.save();
 
-  logger.info(`Coupon applied to cart: ${req.user._id} - ${couponCode}`);
-
-  // Fetch updated cart with populated data
   const updatedCart = await Cart.findById(cart._id)
     .populate({
       path: 'items.foodItem',
       select: 'name price discountedPrice image veg',
     })
-    .populate('restaurant', 'name deliveryFee minOrderAmount');
+    .populate('restaurant', 'name deliveryFee minOrderAmount')
+    .populate('couponApplied'); // ✅ Populate applied coupon
+
+  logger.info(`Coupon applied: ${couponCode} by user ${req.user._id}`);
 
   res.status(200).json({
     success: true,
-    message: 'Coupon applied successfully',
+    message: `Coupon '${coupon.code}' applied successfully.`,
     data: updatedCart,
   });
 });
 
-// Helper function to recalculate cart totals
 const recalculateCart = async (cartId) => {
   const cart = await Cart.findById(cartId);
   
@@ -438,7 +436,6 @@ const recalculateCart = async (cartId) => {
     return;
   }
 
-  // Calculate total items and subtotal
   let totalItems = 0;
   let subtotal = 0;
   
@@ -447,30 +444,25 @@ const recalculateCart = async (cartId) => {
     subtotal += item.totalPrice;
   });
 
-  // Get restaurant for updated delivery fee and packaging charges
   if (cart.restaurant && cart.items.length > 0) {
     const restaurant = await Restaurant.findById(cart.restaurant);
     
     if (restaurant) {
       cart.deliveryFee = restaurant.deliveryFee || 0;
-      // Simulated packaging charges (could be from restaurant model)
-      cart.packagingCharges = Math.round(subtotal * 0.02); // 2% of subtotal
+      cart.packagingCharges = Math.round(subtotal * 0.02); 
     }
   } else {
     cart.deliveryFee = 0;
     cart.packagingCharges = 0;
   }
 
-  // Calculate tax (example: 5% GST)
   const taxRate = 0.05;
   const taxAmount = Math.round(subtotal * taxRate);
 
-  // Update cart
   cart.totalItems = totalItems;
   cart.subtotal = subtotal;
   cart.taxAmount = taxAmount;
   
-  // Recalculate final amount with any applied discounts
   cart.finalAmount = subtotal + taxAmount + cart.deliveryFee + cart.packagingCharges - cart.discountAmount;
   
   await cart.save();

@@ -5,7 +5,6 @@ import { validateRequest } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-// Placeholder for address controller (to be implemented)
 const addressController = {
   getAddresses: (req, res) => {
     res.status(200).json({ message: 'Get addresses' });
