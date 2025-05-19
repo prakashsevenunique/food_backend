@@ -5,7 +5,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import mongoSanitize from 'express-mongo-sanitize';
-import rateLimit from 'express-rate-limit';
 
 import userRoutes from './routes/userRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
@@ -24,7 +23,7 @@ import { logger } from './utils/logger.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 4080;
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://rahuljasrasr1112:YJIOjKgW1TOz99qP@cluster0food.ffgrkhu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0food ')
   .then(() => {
