@@ -9,6 +9,7 @@ import {
   addFavorite,
   removeFavorite,
   getFavorites,
+  getUserById
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -27,6 +28,8 @@ router.route('/favorites')
 router.route('/favorites/:id')
   .post(protect, addFavorite)
   .delete(protect, removeFavorite);
+
+router.get("/:id", protect, getUserById);
 
 router.route('/')
   .get(protect, admin, getUsers);

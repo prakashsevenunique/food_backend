@@ -60,7 +60,7 @@ export const sendSMSController = async (req, res) => {
 };
 
 export const verifyOTP = asyncHandler(async (req, res) => {
-  const { mobileNumber, otp, role } = req.body;
+  const { mobileNumber, otp, role, fullName } = req.body;
 
   const otpEntry = await Otp.findOne({ mobileNumber });
 
@@ -80,6 +80,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
   if (!user) {
     user = await User.create({
+      fullName,
       mobileNumber,
       role: ["user", "restaurant", "delivery", "admin"].includes(role) ? role : "user",
       isVerified: true,
@@ -88,6 +89,11 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     });
   } else {
     user.isVerified = true;
+
+    // Update fullName if not set
+    if (!user.fullName && fullName) {
+      user.fullName = fullName;
+    }
 
     // Initialize wallet if not already present
     if (!user.wallet || typeof user.wallet !== "number") {
@@ -102,6 +108,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     success: true,
     data: {
       _id: user._id,
+      fullName: user.fullName,
       mobileNumber: user.mobileNumber,
       role: user.role,
       token: generateToken(user._id),
@@ -130,6 +137,17 @@ export const getUserProfile = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
+});
+
+export const getUserById = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id).select("-otp -otpExpires");
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  res.json(user);
 });
 
 export const updateUserProfile = asyncHandler(async (req, res) => {

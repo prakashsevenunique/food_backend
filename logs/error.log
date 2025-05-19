@@ -298,3 +298,12 @@ Use mongoose.model(name, schema) - /api/users/profile - GET - ::1
 2025-05-18T08:56:24.817Z [ERROR]: Not authorized, no token - /api/categories - POST - ::ffff:192.168.1.32
 2025-05-18T10:06:55.598Z [ERROR]: Not Found - /auth/verify-otp - /auth/verify-otp - POST - ::ffff:192.168.1.32
 2025-05-19T05:13:44.897Z [ERROR]: Not authorized, token failed - /api/users/profile - GET - ::1
+2025-05-19T06:59:28.610Z [ERROR]: Not Found - /api/users/send-otp - /api/users/send-otp - GET - ::ffff:192.168.1.75
+2025-05-19T06:59:33.113Z [ERROR]: Not Found - /api/users/send-otp - /api/users/send-otp - GET - ::ffff:192.168.1.31
+2025-05-19T07:05:00.698Z [ERROR]: Not Found - /api/users/send-otp - /api/users/send-otp - GET - ::ffff:192.168.1.75
+2025-05-19T07:05:01.925Z [ERROR]: Not Found - /api/users/send-otp - /api/users/send-otp - GET - ::ffff:192.168.1.75
+2025-05-19T07:05:02.367Z [ERROR]: Not Found - /api/users/send-otp - /api/users/send-otp - GET - ::ffff:192.168.1.75
+2025-05-19T07:05:02.532Z [ERROR]: Not Found - /api/users/send-otp - /api/users/send-otp - GET - ::ffff:192.168.1.75
+2025-05-19T07:05:02.719Z [ERROR]: Not Found - /api/users/send-otp - /api/users/send-otp - GET - ::ffff:192.168.1.75
+2025-05-19T09:19:15.811Z [ERROR]: Not Found - /api/users/profile/682af713fd576ad561b48840 - /api/users/profile/682af713fd576ad561b48840 - GET - ::1
+2025-05-19T09:24:01.100Z [ERROR]: Not Found - /api/users/profile/682af713fd576ad561b48840 - /api/users/profile/682af713fd576ad561b48840 - GET - ::1
