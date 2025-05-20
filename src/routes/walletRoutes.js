@@ -1,0 +1,24 @@
+import express from 'express';
+const router = express.Router();
+
+import {
+  getWallet,
+  creditWallet,
+  debitWallet,
+  getAllWallets,
+  refundWalletOnCancel,
+} from '../controllers/walletController.js';
+
+import { protect, admin } from '../middleware/authMiddleware.js';
+
+router.use(protect); // All routes below require authentication
+
+router.get('/', getWallet);
+router.post('/credit', creditWallet);
+router.post('/debit', debitWallet);
+
+// Admin routes
+router.get('/admin/wallets', admin, getAllWallets);
+router.post('/admin/refund', admin, refundWalletOnCancel);
+
+export default router;

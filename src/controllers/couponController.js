@@ -1,54 +1,49 @@
 import Coupon from '../models/Coupon.js';
-import cloudinary from '../config/cloudinary.js';
 import fs from 'fs';
+import upload from '../config/multer.js';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-// do convert photo from frontend 
-export const createCoupon = async (req, res) => {
+
+export const updateCouponTextOnly = async (req, res) => {
   try {
-    const { description, couponType, discountValue, expiryDate, couponPhoto } = req.body;
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) return res.status(404).json({ message: 'Coupon not found' });
 
-    // Validation
-    if (!description || !couponType || !discountValue) {
-      return res.status(400).json({ message: 'All required fields must be provided' });
-    }
+    const { description, couponType, discountValue } = req.body;
 
-    let photoUrl = '';
-    if (couponPhoto) {
-      const result = await cloudinary.uploader.upload(couponPhoto, {
-        folder: 'coupons',
-      });
+    if (description) coupon.description = description;
+    if (couponType) coupon.couponType = couponType;
+    if (discountValue) coupon.discountValue = discountValue;
 
+    await coupon.save();
+    res.status(200).json({ message: 'Coupon updated successfully', coupon });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
-      photoUrl = result.secure_url;
-      console.log('📸 Photo URL saved in DB:', photoUrl);
-    } else {
-      console.log('⚠️ No image (couponPhoto) provided in request body');
-    }
+export const updateCouponImageOnly = async (req, res) => {
+  try {
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) return res.status(404).json({ message: 'Coupon not found' });
 
-    const expiry = expiryDate ? new Date(expiryDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    if (!req.file) return res.status(400).json({ message: 'No image file uploaded' });
 
-    const newCoupon = new Coupon({
-      description,
-      couponType,
-      discountValue,
-      expiryDate: expiry,
-      couponPhoto: photoUrl,
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'coupons'
     });
 
-    await newCoupon.save();
+    fs.unlinkSync(req.file.path);
 
-    console.log('✅ Coupon saved to DB:', newCoupon);
+    coupon.couponPhoto = result.secure_url;
+    await coupon.save();
 
-    res.status(201).json({ message: 'Coupon created successfully', coupon: newCoupon });
-
+    res.status(200).json({
+      message: 'Coupon image updated successfully',
+      imageUrl: result.secure_url,
+      coupon,
+    });
   } catch (error) {
-    console.error('❌ Error creating coupon:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 

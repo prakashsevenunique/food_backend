@@ -5,11 +5,11 @@ import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
 import { logger } from "../utils/logger.js";
 import Address from "../models/addressModel.js";
+import upload from '../config/multer.js';
+
 
 export const generateOtp = () => {
-  // Generate a random 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  return otp;
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 export const sendSMSController = async (req, res) => {
@@ -19,19 +19,21 @@ export const sendSMSController = async (req, res) => {
     if (!mobileNumber) {
       return res.status(400).json({ message: "Mobile number is required" });
     }
-
+    if (mobileNumber.length != 10) {
+      return res.status(400).json({ message: "Mobile number must be 10 digit" });
+    }
     const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
 
-    // Save or update OTP in the database
     await Otp.findOneAndUpdate(
       { mobileNumber },
-      { code: otp, expiresAt },
+      {
+        code: otp,
+        expiresAt: new Date(Date.now() + 4 * 60 * 1000), // 3 minutes from now
+      },
       { upsert: true, new: true }
     );
 
-    // Send SMS via Fast2SMS
-    const response = await axios.post(
+    await axios.post(
       "https://www.fast2sms.com/dev/bulkV2",
       {
         route: "q",
@@ -47,7 +49,8 @@ export const sendSMSController = async (req, res) => {
       }
     );
 
-    const user = await User.findOne({ phone: mobileNumber });
+    // ✅ Check if user already exists
+    const user = await User.findOne({ mobileNumber });
 
     return res.json({
       message: "OTP sent successfully",
@@ -82,7 +85,9 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     user = await User.create({
       fullName,
       mobileNumber,
-      role: ["user", "restaurant", "delivery", "admin"].includes(role) ? role : "user",
+      role: ["user", "restaurant", "delivery", "admin"].includes(role)
+        ? role
+        : "user",
       isVerified: true,
       wallet: 0,
       walletLastUpdated: new Date(),
@@ -150,52 +155,21 @@ export const getUserById = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
-export const updateUserProfile = asyncHandler(async (req, res) => {
-  const { name, mobileNumber, profilePicture, addresses } = req.body;
+export const updateUserTextOnly = asyncHandler(async (req, res) => {
+  const { name, addresses, defaultAddress, favorite } = req.body;
 
   const user = await User.findById(req.user.id);
-
   if (!user) {
     res.status(404);
     throw new Error("User not found");
   }
 
-  // Handle mobileNumber update with OTP verification
-  if (mobileNumber && mobileNumber !== user.mobileNumber) {
-    if (!otp) {
-      return res
-        .status(400)
-        .json({ message: "OTP is required to update mobile number" });
-    }
-
-    const otpEntry = await Otp.findOne({ mobileNumber });
-
-    if (!otpEntry || otpEntry.expiresAt < Date.now()) {
-      return res.status(400).json({ message: "OTP expired or not found" });
-    }
-
-    if (otpEntry.code !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
-
-    const existingUser = await User.findOne({ mobileNumber });
-    if (existingUser && existingUser._id.toString() !== user._id.toString()) {
-      return res
-        .status(400)
-        .json({ message: "Mobile number already in use by another user" });
-    }
-
-    user.mobileNumber = mobileNumber;
-    await Otp.deleteOne({ mobileNumber });
-  }
-
-  // Update other profile fields
   if (name) user.name = name;
-  if (profilePicture) user.profilePicture = profilePicture;
   if (Array.isArray(addresses)) user.addresses = addresses;
+  if (defaultAddress) user.defaultAddress = defaultAddress;
+  if (favorite) user.favorite = favorite;
 
   const updatedUser = await user.save();
-  logger.info(`User profile updated: ${user._id}`);
 
   res.json({
     success: true,
@@ -206,6 +180,43 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
       role: updatedUser.role,
       profilePicture: updatedUser.profilePicture,
       addresses: updatedUser.addresses,
+      defaultAddress: updatedUser.defaultAddress || null,
+      favorite: updatedUser.favorite || [],
+      token: generateToken(updatedUser._id),
+    },
+  });
+});
+
+export const updateUserProfileImage = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (!req.file) {
+    res.status(400);
+    throw new Error("No profile picture uploaded");
+  }
+
+  // Save file path or filename (based on your frontend access method)
+  const fileUrl = `/uploads/${req.file.filename}`; // public path
+
+  user.profilePicture = fileUrl;
+
+  const updatedUser = await user.save();
+
+  res.json({
+    success: true,
+    data: {
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      mobileNumber: updatedUser.mobileNumber,
+      role: updatedUser.role,
+      profilePicture: updatedUser.profilePicture,
+      addresses: updatedUser.addresses,
+      defaultAddress: updatedUser.defaultAddress || null,
+      favorite: updatedUser.favorite || [],
       token: generateToken(updatedUser._id),
     },
   });

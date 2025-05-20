@@ -29,14 +29,17 @@ const userSchema = new mongoose.Schema(
     },
     addresses: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Address",
-        required: false,
+        label: { type: String },
+        address: { type: String },
+        latitude: { type: Number },
+        longitude: { type: Number },
       },
     ],
     defaultAddress: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Address",
+      label: { type: String },
+      address: { type: String },
+      latitude: { type: Number },
+      longitude: { type: Number },
     },
     profilePicture: {
       type: String,

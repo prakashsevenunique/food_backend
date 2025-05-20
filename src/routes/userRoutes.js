@@ -3,7 +3,8 @@ import {
   sendSMSController,
   verifyOTP,
   getUserProfile,
-  updateUserProfile,
+  updateUserTextOnly,
+  updateUserProfileImage,
   getUsers,
   deleteUser,
   addFavorite,
@@ -12,16 +13,24 @@ import {
   getUserById
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import upload from '../config/multer.js';
 
 const router = express.Router();
 
+// OTP login routes
 router.post('/send-otp', sendSMSController);
 router.post('/verify-otp', verifyOTP);
 
-router.route('/profile')
-  .get(protect, getUserProfile)
-  .put(protect, updateUserProfile);
+// Get user profile
+router.get('/profile', protect, getUserProfile);
 
+// Update user text details
+router.put('/profile/text', protect, updateUserTextOnly);
+
+// Update user photo
+router.put('/profile/photo', protect, upload.single('profilePicture'), updateUserProfileImage);
+
+// Favorites
 router.route('/favorites')
   .get(protect, getFavorites);
 
@@ -29,12 +38,9 @@ router.route('/favorites/:id')
   .post(protect, addFavorite)
   .delete(protect, removeFavorite);
 
-router.get("/:id", protect, getUserById);
-
-router.route('/')
-  .get(protect, admin, getUsers);
-
-router.route('/:id')
-  .delete(protect, admin, deleteUser);
+// Admin user routes
+router.get('/:id', protect, getUserById);
+router.get('/', protect, admin, getUsers);
+router.delete('/:id', protect, admin, deleteUser);
 
 export default router;
