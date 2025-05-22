@@ -1,4 +1,3 @@
-// src/routes/paymentRoutes.js
 import express from 'express';
 import { createPayIn, initiatePayout } from '../controllers/paymentController.js';
 
