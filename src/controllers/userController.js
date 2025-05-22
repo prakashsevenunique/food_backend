@@ -63,7 +63,7 @@ export const sendSMSController = async (req, res) => {
 };
 
 export const verifyOTP = asyncHandler(async (req, res) => {
-  const { mobileNumber, otp, fullName } = req.body;
+  const { mobileNumber, otp } = req.body;
 
   const otpEntry = await Otp.findOne({ mobileNumber });
 
@@ -83,22 +83,14 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
   if (!user) {
     user = await User.create({
-      fullName,
       mobileNumber,
-      role: ["user", "restaurant", "delivery", "admin"].includes(role)
-        ? role
-        : "user",
+      role: "user", // Default role
       isVerified: true,
       wallet: 0,
       walletLastUpdated: new Date(),
     });
   } else {
     user.isVerified = true;
-
-    // Update fullName if not set
-    if (!user.fullName && fullName) {
-      user.fullName = fullName;
-    }
 
     // Initialize wallet if not already present
     if (!user.wallet || typeof user.wallet !== "number") {
@@ -113,13 +105,13 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     success: true,
     data: {
       _id: user._id,
-      fullName: user.fullName,
       mobileNumber: user.mobileNumber,
       role: user.role,
       token: generateToken(user._id),
     },
   });
 });
+
 
 export const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate("addresses");
