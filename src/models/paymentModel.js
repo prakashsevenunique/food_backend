@@ -61,10 +61,8 @@ const paymentSchema = new mongoose.Schema(
   }
 );
 
-// Compound index for order and payment status for quick lookups
 paymentSchema.index({ order: 1, status: 1 });
 
-// Index on user for quick user payment history
 paymentSchema.index({ user: 1, createdAt: -1 });
 
 const Payment = mongoose.model('Payment', paymentSchema);

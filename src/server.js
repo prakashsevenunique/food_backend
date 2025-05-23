@@ -11,13 +11,13 @@ import restaurantRoutes from './routes/restaurantRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import addressRoutes from './routes/addressRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
 import riderRoutes from "./routes/riderRoutes.js";
+import paymentRoutes from './routes/paymentRoutes.js';
 
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import { logger } from './utils/logger.js';
@@ -43,13 +43,13 @@ app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/menus', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/cart', cartRoutes);
-app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use("/api/riders", riderRoutes);
+app.use('/api/payment', paymentRoutes);
 
 app.get('/', (req, res) => {
   res.send('Food Delivery API is running...');
