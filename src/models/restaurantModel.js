@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-// Location schema for geospatial data
 const locationSchema = new mongoose.Schema({
   type: {
     type: String,
@@ -14,7 +13,6 @@ const locationSchema = new mongoose.Schema({
   },
 });
 
-// Timing schema for daily schedule
 const timingSchema = new mongoose.Schema({
   day: {
     type: String,
@@ -97,50 +95,13 @@ const restaurantSchema = new mongoose.Schema(
     coverImage: {
       type: String,
     },
-    image: {
-      type: String, // main promotional image
-    },
-    distance: {
-      type: String, // e.g., "0.7 km"
-    },
-    deliveryTime: {
-      type: String, // e.g., "25-35 min"
-    },
     rating: {
       type: Number,
       min: 0,
       max: 5,
       default: 0,
     },
-    discount: {
-      type: String, // e.g., "10% OFF"
-    },
-    offers: [
-      {
-        id: { type: Number },
-        text: { type: String },
-        highlight: { type: Boolean, default: false },
-        icon: { type: String }, // icon class or identifier
-      },
-    ],
-    ratings: {
-      average: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 5,
-      },
-      count: {
-        type: Number,
-        default: 0,
-      },
-    },
     timings: [timingSchema],
-    priceRange: {
-      type: String,
-      enum: ["$", "$$", "$$$", "$$$$"],
-      default: "$$",
-    },
     serviceOptions: {
       dineIn: { type: Boolean, default: true },
       takeaway: { type: Boolean, default: true },

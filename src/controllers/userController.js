@@ -4,8 +4,7 @@ import Otp from "../models/otp.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
 import { logger } from "../utils/logger.js";
-import Address from "../models/addressModel.js";
-import upload from '../config/multer.js';
+
 
 
 export const generateOtp = () => {
@@ -112,7 +111,6 @@ export const verifyOTP = asyncHandler(async (req, res) => {
   });
 });
 
-
 export const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate("addresses");
 
@@ -203,12 +201,46 @@ export const updateUserProfileImage = asyncHandler(async (req, res) => {
 });
 
 export const getUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({});
+  const {
+    page = 1,
+    limit = 10,
+    sortBy = 'createdAt',
+    order = 'desc',
+    name,
+    email,
+    role,
+  } = req.query;
+
+  const filter = {};
+  if (name) filter.name = { $regex: name, $options: 'i' };
+  if (email) filter.email = { $regex: email, $options: 'i' };
+  if (role) filter.role = role;
+
+  const pageNumber = parseInt(page, 10);
+  const pageSize = parseInt(limit, 10);
+  const skip = (pageNumber - 1) * pageSize;
+  const sortOrder = order === 'asc' ? 1 : -1;
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(pageSize),
+    User.countDocuments(filter),
+  ]);
+
   res.json({
     success: true,
     data: users,
+    pagination: {
+      total,
+      page: pageNumber,
+      limit: pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    },
   });
 });
+
 
 export const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);

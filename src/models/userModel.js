@@ -43,7 +43,6 @@ const userSchema = new mongoose.Schema(
     },
     profilePicture: {
       type: String,
-      default: "default-profile.jpg",
       required: false,
     },
     favorites: [
