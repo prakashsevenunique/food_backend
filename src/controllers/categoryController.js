@@ -22,7 +22,7 @@ export const createCategoryTextOnly = async (req, res) => {
       description,
       type,
       isActive,
-      image: "", // will be updated separately
+      image: "", 
     });
 
     const saved = await category.save();

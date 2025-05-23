@@ -3,9 +3,6 @@ import Restaurant from '../models/restaurantModel.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 
-// @desc    Create a new food item
-// @route   POST /api/menus
-// @access  Private/Restaurant
 export const createFoodItem = asyncHandler(async (req, res) => {
   const {
     name,
@@ -25,7 +22,6 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     customizations,
   } = req.body;
 
-  // Check if restaurant exists and if user is the owner
   const restaurant = await Restaurant.findById(restaurantId);
   
   if (!restaurant) {
@@ -33,7 +29,6 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     throw new Error('Restaurant not found');
   }
 
-  // Verify ownership or admin rights
   if (
     restaurant.owner.toString() !== req.user._id.toString() &&
     req.user.role !== 'admin'
@@ -61,7 +56,6 @@ export const createFoodItem = asyncHandler(async (req, res) => {
   });
 
   if (foodItem) {
-    // Add food item to restaurant's menu array
     await Restaurant.findByIdAndUpdate(restaurantId, {
       $push: { menu: foodItem._id },
     });
@@ -78,9 +72,6 @@ export const createFoodItem = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get all food items
-// @route   GET /api/menus
-// @access  Public
 export const getFoodItems = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -96,32 +87,26 @@ export const getFoodItems = asyncHandler(async (req, res) => {
       }
     : {};
 
-  // Filter options
   const filter = { ...keyword, isAvailable: true };
 
-  // Category filter
   if (req.query.category) {
     filter.category = req.query.category;
   }
 
-  // Veg filter
   if (req.query.veg === 'true') {
     filter.veg = true;
   }
 
-  // Price range filter
   if (req.query.minPrice || req.query.maxPrice) {
     filter.price = {};
     if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice);
     if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice);
   }
 
-  // Restaurant filter
   if (req.query.restaurant) {
     filter.restaurant = req.query.restaurant;
   }
 
-  // Spicy level filter
   if (req.query.spicyLevel) {
     filter.spicyLevel = req.query.spicyLevel;
   }
@@ -144,9 +129,6 @@ export const getFoodItems = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get food item by ID
-// @route   GET /api/menus/:id
-// @access  Public
 export const getFoodItemById = asyncHandler(async (req, res) => {
   const foodItem = await FoodItem.findById(req.params.id)
     .populate('restaurant', 'name address contact')
@@ -163,9 +145,6 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update a food item
-// @route   PUT /api/menus/:id
-// @access  Private/Restaurant
 export const updateFoodItem = asyncHandler(async (req, res) => {
   const foodItem = await FoodItem.findById(req.params.id);
 
@@ -176,7 +155,6 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
 
   const restaurant = await Restaurant.findById(foodItem.restaurant);
 
-  // Verify ownership or admin rights
   if (
     restaurant.owner.toString() !== req.user._id.toString() &&
     req.user.role !== 'admin'
@@ -199,9 +177,6 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete a food item
-// @route   DELETE /api/menus/:id
-// @access  Private/Restaurant
 export const deleteFoodItem = asyncHandler(async (req, res) => {
   const foodItem = await FoodItem.findById(req.params.id);
 
@@ -212,7 +187,6 @@ export const deleteFoodItem = asyncHandler(async (req, res) => {
 
   const restaurant = await Restaurant.findById(foodItem.restaurant);
 
-  // Verify ownership or admin rights
   if (
     restaurant.owner.toString() !== req.user._id.toString() &&
     req.user.role !== 'admin'
@@ -221,7 +195,6 @@ export const deleteFoodItem = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to delete this food item');
   }
 
-  // Remove food item from restaurant's menu array
   await Restaurant.findByIdAndUpdate(foodItem.restaurant, {
     $pull: { menu: foodItem._id },
   });
@@ -235,9 +208,6 @@ export const deleteFoodItem = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Update food item availability
-// @route   PATCH /api/menus/:id/availability
-// @access  Private/Restaurant
 export const updateAvailability = asyncHandler(async (req, res) => {
   const { isAvailable } = req.body;
   const foodItem = await FoodItem.findById(req.params.id);
@@ -249,7 +219,6 @@ export const updateAvailability = asyncHandler(async (req, res) => {
 
   const restaurant = await Restaurant.findById(foodItem.restaurant);
 
-  // Verify ownership or admin rights
   if (
     restaurant.owner.toString() !== req.user._id.toString() &&
     req.user.role !== 'admin'
@@ -273,9 +242,6 @@ export const updateAvailability = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get popular food items
-// @route   GET /api/menus/popular
-// @access  Public
 export const getPopularFoodItems = asyncHandler(async (req, res) => {
   const popularItems = await FoodItem.find({
     isPopular: true,

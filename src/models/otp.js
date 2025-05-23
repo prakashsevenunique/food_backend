@@ -14,8 +14,6 @@ const otpSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       required: true,
-      // TTL index: automatically deletes document 0 seconds after this time
-      // The TTL delay itself is set here by the application (3 minutes after creation)
       index: { expires: 0 },
     },
   },

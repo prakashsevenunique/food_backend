@@ -1,7 +1,6 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import {
-  // createCoupon,
   getCoupons,
   getCouponById,
   updateCouponTextOnly,
@@ -14,31 +13,14 @@ import upload from '../config/multer.js';
 
 const router = express.Router();
 
-// Create coupon with text details
-// router.post(
-//   '/',
-//   protect,
-//   admin,
-//   [
-//     body('code').notEmpty().withMessage('Coupon code is required'),
-//     body('discount').isFloat({ min: 0 }).withMessage('Discount must be a valid number'),
-//     body('type').isIn(['percentage', 'flat']).withMessage('Type must be percentage or flat'),
-//     validateRequest,
-//   ],
-//   createCoupon
-// );
-
-// Get all coupons
 router.get('/', getCoupons);
 
-// Get coupon by ID
 router.get(
   '/:id',
   [param('id').notEmpty().withMessage('Coupon ID is required'), validateRequest],
   getCouponById
 );
 
-// Update coupon text/details only
 router.put(
   '/:id',
   protect,
@@ -50,7 +32,6 @@ router.put(
   updateCouponTextOnly
 );
 
-// Update coupon photo only
 router.put(
   '/:id/photo',
   protect,
@@ -63,7 +44,6 @@ router.put(
   updateCouponImageOnly
 );
 
-// Delete coupon
 router.delete(
   '/:id',
   protect,

@@ -27,7 +27,7 @@ export const sendSMSController = async (req, res) => {
       { mobileNumber },
       {
         code: otp,
-        expiresAt: new Date(Date.now() + 4 * 60 * 1000), // 3 minutes from now
+        expiresAt: new Date(Date.now() + 4 * 60 * 1000),
       },
       { upsert: true, new: true }
     );
@@ -48,7 +48,6 @@ export const sendSMSController = async (req, res) => {
       }
     );
 
-    // ✅ Check if user already exists
     const user = await User.findOne({ mobileNumber });
 
     return res.json({
@@ -74,16 +73,14 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid OTP" });
   }
 
-  // Delete OTP entry
   await Otp.deleteOne({ mobileNumber });
 
-  // Find or create user
   let user = await User.findOne({ mobileNumber });
 
   if (!user) {
     user = await User.create({
       mobileNumber,
-      role: "user", // Default role
+      role: "user", 
       isVerified: true,
       wallet: 0,
       walletLastUpdated: new Date(),
@@ -91,7 +88,6 @@ export const verifyOTP = asyncHandler(async (req, res) => {
   } else {
     user.isVerified = true;
 
-    // Initialize wallet if not already present
     if (!user.wallet || typeof user.wallet !== "number") {
       user.wallet = 0;
       user.walletLastUpdated = new Date();
@@ -177,8 +173,7 @@ export const updateUserProfileImage = asyncHandler(async (req, res) => {
     throw new Error("No profile picture uploaded");
   }
 
-  // Save file path or filename (based on your frontend access method)
-  const fileUrl = `/uploads/${req.file.filename}`; // public path
+  const fileUrl = `/uploads/${req.file.filename}`;
 
   user.profilePicture = fileUrl;
 

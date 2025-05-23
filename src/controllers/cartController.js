@@ -5,7 +5,6 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 
 export const getCart = asyncHandler(async (req, res) => {
-  // Find user's cart or create a new one
   let cart = await Cart.findOne({ user: req.user._id })
     .populate({
       path: 'items.foodItem',
@@ -17,7 +16,6 @@ export const getCart = asyncHandler(async (req, res) => {
     })
     .populate('restaurant', 'name deliveryFee minOrderAmount');
 
-  // If no cart exists, create one
   if (!cart) {
     cart = await Cart.create({
       user: req.user._id,
@@ -30,7 +28,6 @@ export const getCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if any items in cart are no longer available
   const unavailableItems = [];
   
   if (cart.items && cart.items.length > 0) {
@@ -40,14 +37,12 @@ export const getCart = asyncHandler(async (req, res) => {
       }
     }
     
-    // If any items are unavailable, remove them
     if (unavailableItems.length > 0) {
       await Cart.updateOne(
         { _id: cart._id },
         { $pull: { items: { _id: { $in: unavailableItems } } } }
       );
       
-      // Refetch cart
       cart = await Cart.findById(cart._id)
         .populate({
           path: 'items.foodItem',
@@ -59,7 +54,6 @@ export const getCart = asyncHandler(async (req, res) => {
         })
         .populate('restaurant', 'name deliveryFee minOrderAmount');
         
-      // Recalculate cart totals
       await recalculateCart(cart._id);
       cart = await Cart.findById(cart._id)
         .populate({
@@ -84,7 +78,6 @@ export const getCart = asyncHandler(async (req, res) => {
 export const addToCart = asyncHandler(async (req, res) => {
   const { foodItemId, quantity, customizations } = req.body;
 
-  // Validate food item exists
   const foodItem = await FoodItem.findById(foodItemId);
   
   if (!foodItem) {
@@ -92,13 +85,11 @@ export const addToCart = asyncHandler(async (req, res) => {
     throw new Error('Food item not found');
   }
 
-  // Check if food item is available
   if (!foodItem.isAvailable) {
     res.status(400);
     throw new Error('Food item is currently unavailable');
   }
 
-  // Get restaurant details
   const restaurant = await Restaurant.findById(foodItem.restaurant);
   
   if (!restaurant) {
@@ -106,10 +97,8 @@ export const addToCart = asyncHandler(async (req, res) => {
     throw new Error('Restaurant not found');
   }
 
-  // Find user's cart
   let cart = await Cart.findOne({ user: req.user._id });
 
-  // If no cart exists, create one
   if (!cart) {
     cart = await Cart.create({
       user: req.user._id,
@@ -122,22 +111,18 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if item is from a different restaurant
   if (cart.restaurant && cart.restaurant.toString() !== restaurant._id.toString() && cart.items.length > 0) {
     res.status(400);
     throw new Error('Cannot add items from different restaurants. Please clear your cart first.');
   }
 
-  // Set restaurant if cart is empty
   if (!cart.restaurant || cart.items.length === 0) {
     cart.restaurant = restaurant._id;
     cart.deliveryFee = restaurant.deliveryFee;
   }
 
-  // Calculate item price
   const itemPrice = foodItem.discountedPrice || foodItem.price;
   
-  // Calculate additional price from customizations
   let customizationPrice = 0;
   if (customizations && customizations.length > 0) {
     customizations.forEach(customization => {
@@ -149,22 +134,18 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Calculate total price for this item
   const totalPrice = (itemPrice + customizationPrice) * quantity;
 
-  // Check if the item already exists in cart
   const existingItemIndex = cart.items.findIndex(
     item => item.foodItem.toString() === foodItemId
   );
 
   if (existingItemIndex > -1) {
-    // Update existing item
     cart.items[existingItemIndex].quantity = quantity;
     cart.items[existingItemIndex].customizations = customizations || [];
     cart.items[existingItemIndex].itemPrice = itemPrice + customizationPrice;
     cart.items[existingItemIndex].totalPrice = totalPrice;
   } else {
-    // Add new item
     cart.items.push({
       foodItem: foodItemId,
       quantity,
@@ -175,10 +156,8 @@ export const addToCart = asyncHandler(async (req, res) => {
   }
 
   await cart.save();
-  // Recalculate cart totals
   await recalculateCart(cart._id);
   
-  // Fetch updated cart with populated data
   const updatedCart = await Cart.findById(cart._id)
     .populate({
       path: 'items.foodItem',
@@ -198,7 +177,6 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   const { quantity, customizations } = req.body;
   const { itemId } = req.params;
 
-  // Find user's cart
   const cart = await Cart.findOne({ user: req.user._id });
   
   if (!cart) {
@@ -206,7 +184,6 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new Error('Cart not found');
   }
 
-  // Find the item in the cart
   const cartItem = cart.items.id(itemId);
   
   if (!cartItem) {
@@ -214,7 +191,6 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new Error('Item not found in cart');
   }
 
-  // Get food item details to calculate price
   const foodItem = await FoodItem.findById(cartItem.foodItem);
   
   if (!foodItem) {
@@ -222,16 +198,13 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new Error('Food item not found');
   }
 
-  // Check if food item is available
   if (!foodItem.isAvailable) {
     res.status(400);
     throw new Error('Food item is currently unavailable');
   }
 
-  // Calculate item price
   const itemPrice = foodItem.discountedPrice || foodItem.price;
   
-  // Calculate additional price from customizations
   let customizationPrice = 0;
   if (customizations && customizations.length > 0) {
     customizations.forEach(customization => {
@@ -243,7 +216,6 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     });
   }
 
-  // Update cart item
   cartItem.quantity = quantity;
   if (customizations) {
     cartItem.customizations = customizations;
@@ -253,10 +225,8 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 
   await cart.save();
   
-  // Recalculate cart totals
   await recalculateCart(cart._id);
   
-  // Fetch updated cart with populated data
   const updatedCart = await Cart.findById(cart._id)
     .populate({
       path: 'items.foodItem',
@@ -275,7 +245,6 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 export const removeCartItem = asyncHandler(async (req, res) => {
   const { itemId } = req.params;
 
-  // Find user's cart
   const cart = await Cart.findOne({ user: req.user._id });
   
   if (!cart) {
@@ -283,7 +252,6 @@ export const removeCartItem = asyncHandler(async (req, res) => {
     throw new Error('Cart not found');
   }
 
-  // Find the item in the cart
   const cartItem = cart.items.id(itemId);
   
   if (!cartItem) {
@@ -291,20 +259,16 @@ export const removeCartItem = asyncHandler(async (req, res) => {
     throw new Error('Item not found in cart');
   }
 
-  // Remove item from cart
   cart.items.pull(itemId);
   
-  // If cart is now empty, remove restaurant reference
   if (cart.items.length === 0) {
     cart.restaurant = null;
   }
   
   await cart.save();
   
-  // Recalculate cart totals
   await recalculateCart(cart._id);
   
-  // Fetch updated cart with populated data
   const updatedCart = await Cart.findById(cart._id)
     .populate({
       path: 'items.foodItem',
@@ -321,7 +285,6 @@ export const removeCartItem = asyncHandler(async (req, res) => {
 });
 
 export const clearCart = asyncHandler(async (req, res) => {
-  // Find and update user's cart
   const cart = await Cart.findOneAndUpdate(
     { user: req.user._id },
     {
@@ -417,7 +380,7 @@ export const applyCoupon = asyncHandler(async (req, res) => {
       select: 'name price discountedPrice image veg',
     })
     .populate('restaurant', 'name deliveryFee minOrderAmount')
-    .populate('couponApplied'); // ✅ Populate applied coupon
+    .populate('couponApplied');
 
   logger.info(`Coupon applied: ${couponCode} by user ${req.user._id}`);
 

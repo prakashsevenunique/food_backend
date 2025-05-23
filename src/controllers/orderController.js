@@ -20,7 +20,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     specialInstructions,
   } = req.body;
 
-  // Get cart details
+ 
   const cart = await Cart.findById(cartId);
   
   if (!cart) {
@@ -28,19 +28,16 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Cart not found');
   }
 
-  // Verify cart belongs to user
   if (cart.user.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error('Unauthorized access to cart');
   }
 
-  // Check if cart is empty
   if (!cart.items || cart.items.length === 0) {
     res.status(400);
     throw new Error('Cart is empty');
   }
 
-  // Get restaurant details
   const restaurant = await Restaurant.findById(cart.restaurant);
   
   if (!restaurant) {
@@ -48,7 +45,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Restaurant not found');
   }
 
-  // Create order items and calculate totals
   const orderItems = cart.items.map(item => ({
     foodItem: item.foodItem,
     quantity: item.quantity,
@@ -57,7 +53,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     subtotal: item.totalPrice,
   }));
 
-  // Create new order
   const order = await Order.create({
     orderNumber: generateOrderNumber(),
     user: req.user._id,
@@ -84,7 +79,6 @@ export const createOrder = asyncHandler(async (req, res) => {
   });
 
   if (order) {
-    // Clear the cart after successful order
     await Cart.findByIdAndDelete(cartId);
     
     logger.info(`New order created: ${order._id}`);
@@ -137,7 +131,6 @@ export const getOrderById = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
-  // Check if the order belongs to the logged in user or restaurant owner or admin
   const restaurant = await Restaurant.findById(order.restaurant);
 
   if (
@@ -165,7 +158,6 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
-  // Check permissions - only restaurant owner, admin or assigned delivery partner can update
   const restaurant = await Restaurant.findById(order.restaurant);
   
   const isDeliveryPartner = 
@@ -182,17 +174,14 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to update this order');
   }
 
-  // Update order status
   order.orderStatus = status;
   
-  // Add to status timeline
   order.orderStatusTimeline.push({
     status,
     timestamp: new Date(),
     note: note || `Order status updated to ${status}`,
   });
 
-  // Special handling for certain statuses
   if (status === 'DELIVERED') {
     order.actualDeliveryTime = new Date();
   }
@@ -215,22 +204,18 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
-  // Check if the order is already delivered or cancelled
   if (['DELIVERED', 'CANCELLED'].includes(order.orderStatus)) {
     res.status(400);
     throw new Error(`Order cannot be cancelled as it is ${order.orderStatus}`);
   }
 
-  // Check if it's beyond the cancellation window (e.g. already preparing)
   if (['PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(order.orderStatus)) {
-    // Check who is cancelling
     if (req.user.role !== 'admin' && order.user.toString() === req.user._id.toString()) {
       res.status(400);
       throw new Error('Cannot cancel order at this stage');
     }
   }
 
-  // Determine who cancelled
   let cancelledBy = 'USER';
   if (req.user.role === 'admin') {
     cancelledBy = 'ADMIN';
@@ -240,22 +225,18 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     cancelledBy = 'DELIVERY_PARTNER';
   }
 
-  // Update order
   order.orderStatus = 'CANCELLED';
   order.cancelReason = reason;
   order.cancelledBy = cancelledBy;
   
-  // Add to status timeline
   order.orderStatusTimeline.push({
     status: 'CANCELLED',
     timestamp: new Date(),
     note: reason || 'Order cancelled',
   });
 
-  // Handle payment status if needed
   if (order.paymentStatus === 'PAID') {
     order.paymentStatus = 'REFUNDED';
-    // Here you would trigger actual refund process
   }
 
   await order.save();
@@ -277,7 +258,6 @@ export const assignDeliveryPartner = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
-  // Check permissions
   const restaurant = await Restaurant.findById(order.restaurant);
   
   if (
@@ -288,7 +268,6 @@ export const assignDeliveryPartner = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to assign delivery partner');
   }
 
-  // Verify delivery partner exists and has delivery role
   const deliveryPartner = await User.findById(deliveryPartnerId);
   
   if (!deliveryPartner || deliveryPartner.role !== 'delivery') {
@@ -296,14 +275,11 @@ export const assignDeliveryPartner = asyncHandler(async (req, res) => {
     throw new Error('Invalid delivery partner');
   }
 
-  // Assign delivery partner
   order.deliveryPartner = deliveryPartnerId;
   
-  // Update order status if needed
   if (order.orderStatus === 'READY_FOR_PICKUP') {
     order.orderStatus = 'OUT_FOR_DELIVERY';
     
-    // Add to status timeline
     order.orderStatusTimeline.push({
       status: 'OUT_FOR_DELIVERY',
       timestamp: new Date(),
@@ -326,19 +302,15 @@ export const getRestaurantOrders = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Find restaurants owned by user
   const restaurants = await Restaurant.find({ owner: req.user._id });
   const restaurantIds = restaurants.map(rest => rest._id);
 
-  // Filter options
   const filter = { restaurant: { $in: restaurantIds } };
   
-  // Status filter
   if (req.query.status) {
     filter.orderStatus = req.query.status;
   }
   
-  // Date range filter
   if (req.query.startDate && req.query.endDate) {
     filter.createdAt = {
       $gte: new Date(req.query.startDate),
@@ -371,20 +343,16 @@ export const getAllOrders = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Filter options
   const filter = {};
   
-  // Status filter
   if (req.query.status) {
     filter.orderStatus = req.query.status;
   }
   
-  // Restaurant filter
   if (req.query.restaurant) {
     filter.restaurant = req.query.restaurant;
   }
   
-  // Date range filter
   if (req.query.startDate && req.query.endDate) {
     filter.createdAt = {
       $gte: new Date(req.query.startDate),
@@ -417,18 +385,14 @@ export const getDeliveryOrders = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Filter options
   const filter = { deliveryPartner: req.user._id };
   
-  // Status filter
   if (req.query.status) {
     filter.orderStatus = req.query.status;
   } else {
-    // By default, exclude delivered and cancelled orders
     filter.orderStatus = { $nin: ['DELIVERED', 'CANCELLED'] };
   }
   
-  // Date filter
   if (req.query.date) {
     const start = new Date(req.query.date);
     start.setHours(0, 0, 0, 0);

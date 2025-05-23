@@ -91,7 +91,7 @@ export const initiatePayout = async (req, res) => {
       {
         headers: {
           ...form.getHeaders(),
-          Authorization: `Bearer ${process.env.WORLD_PAY_TOKEN}`, // Use .env token
+          Authorization: `Bearer ${process.env.WORLD_PAY_TOKEN}`,
         },
       }
     );
