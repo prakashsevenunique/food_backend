@@ -5,91 +5,92 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 
 export const getRestaurants = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
+  const {
+    page = 1,
+    limit = 10,
+    keyword,
+    cuisine,
+    priceRange,
+    minRating,
+    lat,
+    lng,
+    maxDistance,
+    sort,
+  } = req.query;
 
-  const keyword = req.query.keyword
-    ? {
-        $or: [
-          { name: { $regex: req.query.keyword, $options: 'i' } },
-          { 'address.city': { $regex: req.query.keyword, $options: 'i' } },
-          { tags: { $regex: req.query.keyword, $options: 'i' } },
-        ],
-      }
-    : {};
+  const pageNumber = parseInt(page, 10);
+  const pageSize = parseInt(limit, 10);
+  const skip = (pageNumber - 1) * pageSize;
 
-  // Filter options
-  const filter = { ...keyword, isActive: true };
+  const filter = { isActive: true };
 
-  // Cuisine filter
-  if (req.query.cuisine) {
-    filter.cuisine = { $in: req.query.cuisine.split(',') };
+  if (keyword) {
+    filter.$or = [
+      { name: { $regex: keyword, $options: 'i' } },
+      { 'address.city': { $regex: keyword, $options: 'i' } },
+      { tags: { $regex: keyword, $options: 'i' } },
+    ];
   }
 
-  // Price range filter
-  if (req.query.priceRange) {
-    filter.priceRange = { $in: req.query.priceRange.split(',') };
+  if (cuisine) {
+    filter.cuisine = { $in: cuisine.split(',') };
   }
 
-  // Rating filter
-  if (req.query.minRating) {
-    filter['ratings.average'] = { $gte: parseFloat(req.query.minRating) };
+  if (priceRange) {
+    filter.priceRange = { $in: priceRange.split(',') };
   }
 
-  // Location-based filter (if coordinates provided)
-  if (req.query.lat && req.query.lng && req.query.maxDistance) {
+  if (minRating) {
+    filter.rating = { $gte: parseFloat(minRating) };
+  }
+
+  if (lat && lng) {
     filter.location = {
       $near: {
         $geometry: {
           type: 'Point',
-          coordinates: [parseFloat(req.query.lng), parseFloat(req.query.lat)],
+          coordinates: [parseFloat(lng), parseFloat(lat)],
         },
-        $maxDistance: parseInt(req.query.maxDistance) * 1000, // Convert km to meters
+        $maxDistance: maxDistance ? parseInt(maxDistance, 10) * 1000 : 5000, // Default to 5km
       },
     };
   }
 
-  // Sorting options
-  let sort = {};
-  if (req.query.sort) {
-    switch (req.query.sort) {
-      case 'rating':
-        sort = { 'ratings.average': -1 };
-        break;
-      case 'deliveryTime':
-        sort = { avgDeliveryTime: 1 };
-        break;
-      case 'priceLowToHigh':
-        sort = { minOrderAmount: 1 };
-        break;
-      case 'priceHighToLow':
-        sort = { minOrderAmount: -1 };
-        break;
-      default:
-        sort = { 'ratings.average': -1 };
-    }
-  } else {
-    // Default sort by rating
-    sort = { 'ratings.average': -1 };
+  let sortOption = {};
+  switch (sort) {
+    case 'rating':
+      sortOption = { rating: -1 };
+      break;
+    case 'deliveryTime':
+      sortOption = { avgDeliveryTime: 1 };
+      break;
+    case 'priceLowToHigh':
+      sortOption = { minOrderAmount: 1 };
+      break;
+    case 'priceHighToLow':
+      sortOption = { minOrderAmount: -1 };
+      break;
+    default:
+      sortOption = { rating: -1 };
   }
 
   const restaurants = await Restaurant.find(filter)
-    .populate('cuisine', 'name')
-    .sort(sort)
+    .sort(sortOption)
     .skip(skip)
-    .limit(limit);
+    .limit(pageSize);
 
   const totalRestaurants = await Restaurant.countDocuments(filter);
 
   res.json({
     success: true,
     data: restaurants,
-    page,
-    pages: Math.ceil(totalRestaurants / limit),
+    page: pageNumber,
+    pages: Math.ceil(totalRestaurants / pageSize),
     total: totalRestaurants,
   });
 });
+
+
 
 export const getRestaurantById = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findById(req.params.id)
@@ -164,7 +165,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
 
   if (restaurant) {
     logger.info(`New restaurant created: ${restaurant._id}`);
-    
+
     res.status(201).json({
       success: true,
       data: restaurant,
@@ -183,7 +184,6 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
     throw new Error('Restaurant not found');
   }
 
-  // Check if user is the restaurant owner or admin
   if (
     restaurant.owner.toString() !== req.user._id.toString() &&
     req.user.role !== 'admin'

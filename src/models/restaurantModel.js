@@ -182,6 +182,9 @@ restaurantSchema.index({
   tags: "text",
 });
 
+restaurantSchema.index({ location: '2dsphere' });
+
+
 const Restaurant = mongoose.model("Restaurant", restaurantSchema);
 
 export default Restaurant;
