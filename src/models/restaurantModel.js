@@ -1,109 +1,128 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
+// Location schema for geospatial data
 const locationSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['Point'],
-    default: 'Point',
-    required: true
+    enum: ["Point"],
+    default: "Point",
+    required: true,
   },
   coordinates: {
     type: [Number],
-    required: true
-  }
+    required: true,
+  },
 });
 
+// Timing schema for daily schedule
 const timingSchema = new mongoose.Schema({
   day: {
     type: String,
-    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-    required: true
+    enum: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    required: true,
   },
   opening: {
     type: String,
-    required: true
+    required: true,
   },
   closing: {
     type: String,
-    required: true
+    required: true,
   },
   closed: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
+// Restaurant schema
 const restaurantSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Please provide a restaurant name'],
+      required: [true, "Please provide a restaurant name"],
       trim: true,
     },
     description: {
       type: String,
-      required: [true, 'Please provide a description'],
+      required: [true, "Please provide a description"],
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     address: {
-      street: {
-        type: String,
-        required: true,
-      },
-      city: {
-        type: String,
-        required: true,
-      },
-      state: {
-        type: String,
-        required: true,
-      },
-      zipCode: {
-        type: String,
-        required: true,
-      },
-      country: {
-        type: String,
-        required: true,
-        default: 'India',
-      },
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      zipCode: { type: String, required: true },
+      country: { type: String, required: true, default: "India" },
     },
     location: {
       type: locationSchema,
       required: true,
-      index: '2dsphere'
+      index: "2dsphere",
     },
     contact: {
-      phone: {
-        type: String,
-        required: true,
-      },
-      alternatePhone: {
-        type: String,
-      },
-      email: {
-        type: String,
-        required: true,
-      },
+      phone: { type: String, required: true },
+      alternatePhone: { type: String },
+      email: { type: String, required: true },
     },
-    cuisine: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-    }],
-    menu: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'FoodItem',
-    }],
-    images: [{
-      type: String,
-    }],
+    cuisine: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+      },
+    ],
+    menu: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "FoodItem",
+      },
+    ],
+    images: [
+      {
+        type: String,
+      },
+    ],
     coverImage: {
       type: String,
     },
+    image: {
+      type: String, // main promotional image
+    },
+    distance: {
+      type: String, // e.g., "0.7 km"
+    },
+    deliveryTime: {
+      type: String, // e.g., "25-35 min"
+    },
+    rating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: 0,
+    },
+    discount: {
+      type: String, // e.g., "10% OFF"
+    },
+    offers: [
+      {
+        id: { type: Number },
+        text: { type: String },
+        highlight: { type: Boolean, default: false },
+        icon: { type: String }, // icon class or identifier
+      },
+    ],
     ratings: {
       average: {
         type: Number,
@@ -119,22 +138,13 @@ const restaurantSchema = new mongoose.Schema(
     timings: [timingSchema],
     priceRange: {
       type: String,
-      enum: ['$', '$$', '$$$', '$$$$'],
-      default: '$$',
+      enum: ["$", "$$", "$$$", "$$$$"],
+      default: "$$",
     },
     serviceOptions: {
-      dineIn: {
-        type: Boolean,
-        default: true,
-      },
-      takeaway: {
-        type: Boolean,
-        default: true,
-      },
-      delivery: {
-        type: Boolean,
-        default: true,
-      },
+      dineIn: { type: Boolean, default: true },
+      takeaway: { type: Boolean, default: true },
+      delivery: { type: Boolean, default: true },
     },
     deliveryRadius: {
       type: Number,
@@ -148,6 +158,19 @@ const restaurantSchema = new mongoose.Schema(
       type: Number,
       default: 30,
     },
+    deliveryFee: {
+      type: Number,
+      default: 0,
+    },
+    packagingCharges: {
+      type: Number,
+      default: 0,
+    },
+    tags: [
+      {
+        type: String,
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,
@@ -160,17 +183,6 @@ const restaurantSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    deliveryFee: {
-      type: Number,
-      default: 0,
-    },
-    packagingCharges: {
-      type: Number,
-      default: 0,
-    },
-    tags: [{
-      type: String,
-    }],
     bankDetails: {
       accountName: String,
       accountNumber: String,
@@ -194,15 +206,21 @@ const restaurantSchema = new mongoose.Schema(
   }
 );
 
-restaurantSchema.virtual('reviews', {
-  ref: 'Review',
-  localField: '_id',
-  foreignField: 'restaurant',
+// Virtual populate for reviews
+restaurantSchema.virtual("reviews", {
+  ref: "Review",
+  localField: "_id",
+  foreignField: "restaurant",
   justOne: false,
 });
 
-restaurantSchema.index({ name: 'text', 'address.city': 'text', 'tags': 'text' });
+// Full-text index
+restaurantSchema.index({
+  name: "text",
+  "address.city": "text",
+  tags: "text",
+});
 
-const Restaurant = mongoose.model('Restaurant', restaurantSchema);
+const Restaurant = mongoose.model("Restaurant", restaurantSchema);
 
 export default Restaurant;

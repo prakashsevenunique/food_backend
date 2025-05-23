@@ -130,6 +130,12 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     avgDeliveryTime,
     deliveryFee,
     tags,
+    image,
+    distance,
+    deliveryTime,
+    rating,
+    offers,
+    discount,
   } = req.body;
 
   const restaurant = await Restaurant.create({
@@ -148,6 +154,12 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     avgDeliveryTime,
     deliveryFee,
     tags,
+    image,
+    distance,
+    deliveryTime,
+    rating,
+    offers,
+    discount,
   });
 
   if (restaurant) {
