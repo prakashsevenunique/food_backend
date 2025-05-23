@@ -21,20 +21,14 @@ import paymentRoutes from './routes/paymentRoutes.js';
 
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import { logger } from './utils/logger.js';
+import connectDB from './config/db.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4080;
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://rahuljasrasr1112:YJIOjKgW1TOz99qP@cluster0food.ffgrkhu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0food ')
-  .then(() => {
-    logger.info('Connected to MongoDB');
-  })
-  .catch((error) => {
-    logger.error('MongoDB connection error:', error);
-    process.exit(1);
-  });
+connectDB()
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

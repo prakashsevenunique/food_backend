@@ -63,7 +63,7 @@ export const sendSMSController = async (req, res) => {
 };
 
 export const verifyOTP = asyncHandler(async (req, res) => {
-  const { mobileNumber, otp } = req.body;
+  const { mobileNumber, otp, fullName, role } = req.body;
 
   const otpEntry = await Otp.findOne({ mobileNumber });
 
@@ -119,16 +119,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
   if (user) {
     res.json({
       success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        mobileNumber: user.mobileNumber,
-        role: user.role,
-        addresses: user.addresses,
-        defaultAddress: user.defaultAddress,
-        profilePicture: user.profilePicture,
-        favorites: user.favorites,
-      },
+      user
     });
   } else {
     res.status(404);
@@ -148,7 +139,7 @@ export const getUserById = asyncHandler(async (req, res) => {
 });
 
 export const updateUserTextOnly = asyncHandler(async (req, res) => {
-  const { name, addresses, defaultAddress, favorite } = req.body;
+  const { name, email, addresses, defaultAddress, favorite } = req.body;
 
   const user = await User.findById(req.user.id);
   if (!user) {
@@ -156,10 +147,11 @@ export const updateUserTextOnly = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 
-  if (name) user.name = name;
+  if (name) user.fullName = name;
   if (Array.isArray(addresses)) user.addresses = addresses;
   if (defaultAddress) user.defaultAddress = defaultAddress;
   if (favorite) user.favorite = favorite;
+  if (email) user.email = email;
 
   const updatedUser = await user.save();
 
@@ -167,14 +159,10 @@ export const updateUserTextOnly = asyncHandler(async (req, res) => {
     success: true,
     data: {
       _id: updatedUser._id,
-      name: updatedUser.name,
+      name: updatedUser.fullName,
       mobileNumber: updatedUser.mobileNumber,
       role: updatedUser.role,
-      profilePicture: updatedUser.profilePicture,
-      addresses: updatedUser.addresses,
-      defaultAddress: updatedUser.defaultAddress || null,
-      favorite: updatedUser.favorite || [],
-      token: generateToken(updatedUser._id),
+      profilePicture: updatedUser.profilePicture
     },
   });
 });
