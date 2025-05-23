@@ -23,7 +23,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
   const skip = (pageNumber - 1) * pageSize;
 
   const filter = { isActive: true };
-
+         
   if (keyword) {
     filter.$or = [
       { name: { $regex: keyword, $options: 'i' } },
@@ -41,45 +41,88 @@ export const getRestaurants = asyncHandler(async (req, res) => {
   }
 
   if (minRating) {
-    filter.rating = { $gte: parseFloat(minRating) };
+    filter['ratings.average'] = { $gte: parseFloat(minRating) };
   }
 
+  // Aggregation pipeline for restaurant data
+  const pipeline = [];
+
   if (lat && lng) {
-    filter.location = {
-      $near: {
-        $geometry: {
+    const geoNearStage = {
+      $geoNear: {
+        near: {
           type: 'Point',
           coordinates: [parseFloat(lng), parseFloat(lat)],
         },
-        $maxDistance: maxDistance ? parseInt(maxDistance, 10) * 1000 : 5000, // Default to 5km
+        distanceField: 'distance',
+        spherical: true,
+        query: filter,
       },
     };
+
+    if (maxDistance) {
+      geoNearStage.$geoNear.maxDistance = parseInt(maxDistance, 10) * 1000; // km to meters
+    }
+
+    pipeline.push(geoNearStage);
+  } else {
+    pipeline.push({ $match: filter });
   }
 
-  let sortOption = {};
+  // Sort
+  let sortStage = {};
   switch (sort) {
     case 'rating':
-      sortOption = { rating: -1 };
+      sortStage = { 'ratings.average': -1 };
       break;
     case 'deliveryTime':
-      sortOption = { avgDeliveryTime: 1 };
+      sortStage = { avgDeliveryTime: 1 };
       break;
     case 'priceLowToHigh':
-      sortOption = { minOrderAmount: 1 };
+      sortStage = { minOrderAmount: 1 };
       break;
     case 'priceHighToLow':
-      sortOption = { minOrderAmount: -1 };
+      sortStage = { minOrderAmount: -1 };
       break;
     default:
-      sortOption = { rating: -1 };
+      sortStage = { 'ratings.average': -1 };
   }
 
-  const restaurants = await Restaurant.find(filter)
-    .sort(sortOption)
-    .skip(skip)
-    .limit(pageSize);
+  pipeline.push({ $sort: sortStage });
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: pageSize });
 
-  const totalRestaurants = await Restaurant.countDocuments(filter);
+  const restaurants = await Restaurant.aggregate(pipeline);
+
+  // 👉 Separate pipeline for counting
+  const countPipeline = [];
+
+  if (lat && lng) {
+    const geoNearStage = {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [parseFloat(lng), parseFloat(lat)],
+        },
+        distanceField: 'distance',
+        spherical: true,
+        query: filter,
+      },
+    };
+
+    if (maxDistance) {
+      geoNearStage.$geoNear.maxDistance = parseInt(maxDistance, 10) * 1000;
+    }
+
+    countPipeline.push(geoNearStage);
+  } else {
+    countPipeline.push({ $match: filter });
+  }
+
+  countPipeline.push({ $count: 'total' });
+
+  const countResult = await Restaurant.aggregate(countPipeline);
+  const totalRestaurants = countResult[0]?.total || 0;
 
   res.json({
     success: true,
@@ -88,13 +131,20 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     pages: Math.ceil(totalRestaurants / pageSize),
     total: totalRestaurants,
   });
+
 });
-
-
 
 export const getRestaurantById = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findById(req.params.id)
-    .populate('cuisine', 'name')
+    .populate('owner', 'name email profilePicture') // Populate owner details
+    .populate('cuisine', 'name') // Populate cuisine categories
+    .populate({
+      path: 'menu',
+      populate: {
+        path: 'category', // Assuming FoodItem has a category field
+        select: 'name'
+      }
+    }) // Populate full menu with food items and their categories
     .populate({
       path: 'reviews',
       options: { sort: { createdAt: -1 }, limit: 5 },
@@ -105,6 +155,10 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
     });
 
   if (restaurant) {
+    if (restaurant.reviews && restaurant.reviews.length > 0) {
+      const total = restaurant.reviews.reduce((sum, review) => sum + review.rating, 0);
+      restaurant.rating = parseFloat((total / restaurant.reviews.length).toFixed(1));
+    }
     res.json({
       success: true,
       data: restaurant,
@@ -114,7 +168,6 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
     throw new Error('Restaurant not found');
   }
 });
-
 export const createRestaurant = asyncHandler(async (req, res) => {
   const {
     name,
