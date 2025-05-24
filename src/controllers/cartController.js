@@ -5,7 +5,6 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 
 export const getCart = asyncHandler(async (req, res) => {
-  // Find user's cart or create a new one
   let cart = await Cart.findOne({ user: req.user._id })
     .populate({
       path: 'items.foodItem',

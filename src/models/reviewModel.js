@@ -1,3 +1,4 @@
+// models/Review.js
 import mongoose from 'mongoose';
 
 const reviewSchema = new mongoose.Schema(
@@ -36,9 +37,11 @@ const reviewSchema = new mongoose.Schema(
       min: 1,
       max: 5,
     },
-    photos: [{
-      type: String,
-    }],
+    photos: [
+      {
+        type: String,
+      },
+    ],
     likes: {
       type: Number,
       default: 0,
@@ -58,7 +61,6 @@ const reviewSchema = new mongoose.Schema(
 );
 
 reviewSchema.index({ user: 1, order: 1 }, { unique: true });
-
 reviewSchema.index({ restaurant: 1, createdAt: -1 });
 
 const Review = mongoose.model('Review', reviewSchema);

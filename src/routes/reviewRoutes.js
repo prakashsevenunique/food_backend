@@ -1,30 +1,19 @@
 import express from 'express';
 import { body, param } from 'express-validator';
-import { protect, restaurant } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
 import { validateRequest } from '../middleware/validationMiddleware.js';
+import {
+  createReview,
+  getReviews,
+  updateReview,
+  deleteReview,
+} from '../controllers/reviewController.js';
 
 const router = express.Router();
 
-const reviewController = {
-  createReview: (req, res) => {
-    res.status(200).json({ message: 'Review created successfully' });
-  },
-  getReviews: (req, res) => {
-    res.status(200).json({ message: 'Get reviews' });
-  },
-  updateReview: (req, res) => {
-    res.status(200).json({ message: 'Review updated successfully' });
-  },
-  deleteReview: (req, res) => {
-    res.status(200).json({ message: 'Review deleted successfully' });
-  },
-  replyToReview: (req, res) => {
-    res.status(200).json({ message: 'Reply added to review' });
-  },
-};
-
-router.route('/')
-  .get(reviewController.getReviews)
+router
+  .route('/')
+  .get(getReviews)
   .post(
     protect,
     [
@@ -35,10 +24,11 @@ router.route('/')
         .withMessage('Rating must be between 1 and 5'),
       validateRequest,
     ],
-    reviewController.createReview
+    createReview
   );
 
-router.route('/:id')
+router
+  .route('/:id')
   .put(
     protect,
     [
@@ -49,20 +39,8 @@ router.route('/:id')
         .withMessage('Rating must be between 1 and 5'),
       validateRequest,
     ],
-    reviewController.updateReview
+    updateReview
   )
-  .delete(protect, reviewController.deleteReview);
-
-router.post(
-  '/:id/reply',
-  protect,
-  restaurant,
-  [
-    param('id').notEmpty().withMessage('Review ID is required'),
-    body('text').notEmpty().withMessage('Reply text is required'),
-    validateRequest,
-  ],
-  reviewController.replyToReview
-);
+  .delete(protect, deleteReview);
 
 export default router;

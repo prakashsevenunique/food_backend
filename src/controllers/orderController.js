@@ -20,7 +20,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     specialInstructions,
   } = req.body;
 
-  // Get cart details
   const cart = await Cart.findById(cartId);
   
   if (!cart) {
@@ -28,27 +27,21 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Cart not found');
   }
 
-  // Verify cart belongs to user
   if (cart.user.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error('Unauthorized access to cart');
   }
 
-  // Check if cart is empty
   if (!cart.items || cart.items.length === 0) {
     res.status(400);
     throw new Error('Cart is empty');
   }
-
-  // Get restaurant details
   const restaurant = await Restaurant.findById(cart.restaurant);
   
   if (!restaurant) {
     res.status(404);
     throw new Error('Restaurant not found');
   }
-
-  // Create order items and calculate totals
   const orderItems = cart.items.map(item => ({
     foodItem: item.foodItem,
     quantity: item.quantity,
