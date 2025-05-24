@@ -56,7 +56,7 @@ const foodItemSchema = new mongoose.Schema(
       fiber: Number,
     },
     preparationTime: {
-      type: Number, // in minutes
+      type: Number,
       default: 15,
     },
     isAvailable: {
@@ -116,7 +116,6 @@ const foodItemSchema = new mongoose.Schema(
   }
 );
 
-// Index for search
 foodItemSchema.index({ name: 'text', description: 'text', 'ingredients': 'text' });
 
 const FoodItem = mongoose.model('FoodItem', foodItemSchema);

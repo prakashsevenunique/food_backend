@@ -11,13 +11,12 @@ import {
 
 import { protect, admin } from '../middleware/authMiddleware.js';
 
-router.use(protect); // All routes below require authentication
+router.use(protect);
 
 router.get('/', getWallet);
 router.post('/credit', creditWallet);
 router.post('/debit', debitWallet);
 
-// Admin routes
 router.get('/admin/wallets', admin, getAllWallets);
 router.post('/admin/refund', admin, refundWalletOnCancel);
 

@@ -36,9 +36,7 @@ connectDB()
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
-// app.use(helmet());
 app.use(compression());
-// app.use(mongoSanitize());
 
 
 const __filename = fileURLToPath(import.meta.url);

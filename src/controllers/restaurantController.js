@@ -44,7 +44,6 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     filter['ratings.average'] = { $gte: parseFloat(minRating) };
   }
 
-  // Aggregation pipeline for restaurant data
   const pipeline = [];
 
   if (lat && lng) {
@@ -61,7 +60,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     };
 
     if (maxDistance) {
-      geoNearStage.$geoNear.maxDistance = parseInt(maxDistance, 10) * 1000; // km to meters
+      geoNearStage.$geoNear.maxDistance = parseInt(maxDistance, 10) * 1000;
     }
 
     pipeline.push(geoNearStage);
@@ -69,7 +68,6 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     pipeline.push({ $match: filter });
   }
 
-  // Sort
   let sortStage = {};
   switch (sort) {
     case 'rating':
@@ -94,7 +92,6 @@ export const getRestaurants = asyncHandler(async (req, res) => {
 
   const restaurants = await Restaurant.aggregate(pipeline);
 
-  // 👉 Separate pipeline for counting
   const countPipeline = [];
 
   if (lat && lng) {
@@ -136,15 +133,15 @@ export const getRestaurants = asyncHandler(async (req, res) => {
 
 export const getRestaurantById = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findById(req.params.id)
-    .populate('owner', 'name email profilePicture') // Populate owner details
-    .populate('cuisine', 'name') // Populate cuisine categories
+    .populate('owner', 'name email profilePicture') 
+    .populate('cuisine', 'name')
     .populate({
       path: 'menu',
       populate: {
-        path: 'category', // Assuming FoodItem has a category field
+        path: 'category',
         select: 'name'
       }
-    }) // Populate full menu with food items and their categories
+    })
     .populate({
       path: 'reviews',
       options: { sort: { createdAt: -1 }, limit: 5 },
@@ -245,7 +242,6 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to update this restaurant');
   }
 
-  // Update fields
   const updatedRestaurant = await Restaurant.findByIdAndUpdate(
     req.params.id,
     req.body,
@@ -311,7 +307,7 @@ export const getRestaurantReviews = asyncHandler(async (req, res) => {
 });
 
 export const getNearbyRestaurants = asyncHandler(async (req, res) => {
-  const { lat, lng, distance = 5 } = req.query; // distance in km, default 5km
+  const { lat, lng, distance = 5 } = req.query; 
 
   if (!lat || !lng) {
     res.status(400);
@@ -325,7 +321,7 @@ export const getNearbyRestaurants = asyncHandler(async (req, res) => {
           type: 'Point',
           coordinates: [parseFloat(lng), parseFloat(lat)],
         },
-        $maxDistance: parseInt(distance) * 1000, // Convert km to meters
+        $maxDistance: parseInt(distance) * 1000,
       },
     },
     isActive: true,
@@ -349,7 +345,6 @@ export const updateRestaurantImages = asyncHandler(async (req, res) => {
     throw new Error('Restaurant not found');
   }
 
-  // Check ownership
   if (
     restaurant.owner.toString() !== req.user._id.toString() &&
     req.user.role !== 'admin'
@@ -358,7 +353,6 @@ export const updateRestaurantImages = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to update this restaurant');
   }
 
-  // Update images
   if (images) {
     restaurant.images = images;
   }

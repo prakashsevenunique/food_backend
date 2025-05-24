@@ -41,7 +41,6 @@ const timingSchema = new mongoose.Schema({
   },
 });
 
-// Restaurant schema
 const restaurantSchema = new mongoose.Schema(
   {
     name: {
@@ -167,7 +166,6 @@ const restaurantSchema = new mongoose.Schema(
   }
 );
 
-// Virtual populate for reviews
 restaurantSchema.virtual("reviews", {
   ref: "Review",
   localField: "_id",
@@ -175,7 +173,6 @@ restaurantSchema.virtual("reviews", {
   justOne: false,
 });
 
-// Full-text index
 restaurantSchema.index({
   name: "text",
   "address.city": "text",

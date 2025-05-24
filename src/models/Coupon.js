@@ -15,11 +15,11 @@ const couponSchema = new mongoose.Schema({
     required: true,
   },
   couponPhoto: {
-    type: String, // URL from Cloudinary
+    type: String,
   },
   expiryDate: {
     type: Date,
-    default: () => new Date(Date.now() + 30*24*60*60*1000), // 1 month from creation
+    default: () => new Date(Date.now() + 30*24*60*60*1000),
   },
   active: {
     type: Boolean,

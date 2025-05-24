@@ -14,10 +14,8 @@ import upload from '../config/multer.js';
 
 const router = express.Router();
 
-// GET all categories
 router.get('/', getCategories);
 
-// CREATE category text-only
 router.post(
   '/',
   protect,
@@ -33,7 +31,6 @@ router.post(
   createCategoryTextOnly
 );
 
-// UPLOAD category image
 router.put(
   '/:id/photo',
   protect,
@@ -42,14 +39,12 @@ router.put(
   updateCategoryImageOnly
 );
 
-// GET category by ID
 router.get(
   '/:id',
   [param('id').notEmpty().withMessage('Category ID is required'), validateRequest],
   getCategoryById
 );
 
-// UPDATE category text-only
 router.put(
   '/:id',
   protect,
@@ -61,7 +56,6 @@ router.put(
   updateCategoryTextOnly
 );
 
-// DELETE category
 router.delete(
   '/:id',
   protect,
