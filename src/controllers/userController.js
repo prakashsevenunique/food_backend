@@ -309,8 +309,14 @@ export const getFavorites = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 
+  // Add favorite: true to each restaurant object
+  const favoritesWithFlag = user.favorites.map((restaurant) => ({
+    ...restaurant.toObject(),
+    favorite: true,
+  }));
+
   res.status(200).json({
     success: true,
-    data: user.favorites,
+    data: favoritesWithFlag,
   });
 });

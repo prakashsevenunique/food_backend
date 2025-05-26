@@ -23,7 +23,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
   const skip = (pageNumber - 1) * pageSize;
 
   const filter = { isActive: true };
-         
+
   if (keyword) {
     filter.$or = [
       { name: { $regex: keyword, $options: 'i' } },
@@ -46,6 +46,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
 
   const pipeline = [];
 
+  // Step 1: Geo filter or simple match
   if (lat && lng) {
     const geoNearStage = {
       $geoNear: {
@@ -68,6 +69,41 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     pipeline.push({ $match: filter });
   }
 
+  // Step 2: Populate cuisine using $lookup
+  pipeline.push({
+    $lookup: {
+      from: 'categories',
+      localField: 'cuisine',
+      foreignField: '_id',
+      as: 'cuisine',
+    },
+  });
+
+  // Optional: only return specific fields from cuisine (name, _id)
+  pipeline.push({
+    $project: {
+      name: 1,
+      description: 1,
+      address: 1,
+      location: 1,
+      rating: 1,
+      avgDeliveryTime: 1,
+      minOrderAmount: 1,
+      deliveryFee: 1,
+      distance: 1,
+      tags: 1,
+      coverImage: 1,
+      cuisine: {
+        $map: {
+          input: '$cuisine',
+          as: 'c',
+          in: { _id: '$$c._id', name: '$$c.name' },
+        },
+      },
+    },
+  });
+
+  // Step 3: Sorting
   let sortStage = {};
   switch (sort) {
     case 'rating':
@@ -90,8 +126,10 @@ export const getRestaurants = asyncHandler(async (req, res) => {
   pipeline.push({ $skip: skip });
   pipeline.push({ $limit: pageSize });
 
+  // Step 4: Execute aggregation
   const restaurants = await Restaurant.aggregate(pipeline);
 
+  // Step 5: Count total documents for pagination
   const countPipeline = [];
 
   if (lat && lng) {
@@ -117,10 +155,10 @@ export const getRestaurants = asyncHandler(async (req, res) => {
   }
 
   countPipeline.push({ $count: 'total' });
-
   const countResult = await Restaurant.aggregate(countPipeline);
   const totalRestaurants = countResult[0]?.total || 0;
 
+  // Step 6: Send response
   res.json({
     success: true,
     data: restaurants,
@@ -128,7 +166,6 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     pages: Math.ceil(totalRestaurants / pageSize),
     total: totalRestaurants,
   });
-
 });
 
 export const getRestaurantById = asyncHandler(async (req, res) => {

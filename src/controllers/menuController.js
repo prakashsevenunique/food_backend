@@ -11,7 +11,6 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     discountedPrice,
     restaurant: restaurantId,
     category,
-    image,
     veg,
     spicyLevel,
     ingredients,
@@ -23,7 +22,7 @@ export const createFoodItem = asyncHandler(async (req, res) => {
   } = req.body;
 
   const restaurant = await Restaurant.findById(restaurantId);
-  
+
   if (!restaurant) {
     res.status(404);
     throw new Error('Restaurant not found');
@@ -44,7 +43,6 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     discountedPrice,
     restaurant: restaurantId,
     category,
-    image,
     veg,
     spicyLevel,
     ingredients,
@@ -61,7 +59,7 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     });
 
     logger.info(`New food item created: ${foodItem._id}`);
-    
+
     res.status(201).json({
       success: true,
       data: foodItem,
@@ -70,6 +68,40 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Invalid food item data');
   }
+});
+
+
+export const uploadFoodImage = asyncHandler(async (req, res) => {
+  const foodItemId = req.params.id.trim();
+  const foodItem = await FoodItem.findById(foodItemId);
+
+  if (!foodItem) {
+    res.status(404);
+    throw new Error('Food item not found');
+  }
+
+  // Authorization check
+  if (
+    foodItem.restaurant?.toString() !== req.user._id.toString() &&
+    req.user.role !== 'restaurant'
+  ) {
+    res.status(403);
+    throw new Error('Not authorized to update image for this food item');
+  }
+
+  if (!req.file) {
+    res.status(400);
+    throw new Error('No image file uploaded');
+  }
+
+  foodItem.image = req.file.path;
+  await foodItem.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Image uploaded successfully',
+    data: foodItem,
+  });
 });
 
 export const getFoodItems = asyncHandler(async (req, res) => {

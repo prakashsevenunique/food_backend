@@ -8,9 +8,11 @@ import {
   deleteFoodItem,
   updateAvailability,
   getPopularFoodItems,
+  uploadFoodImage
 } from '../controllers/menuController.js';
 import { protect, restaurant } from '../middleware/authMiddleware.js';
 import { validateRequest } from '../middleware/validationMiddleware.js';
+import upload from '../config/multer.js';
 
 const router = express.Router();
 
@@ -21,24 +23,20 @@ router.route('/')
     restaurant,
     [
       body('name').notEmpty().withMessage('Food item name is required'),
-      body('description')
-        .notEmpty()
-        .withMessage('Food item description is required'),
-      body('price')
-        .isNumeric()
-        .withMessage('Price must be a number')
-        .isFloat({ min: 0 })
-        .withMessage('Price must be greater than or equal to 0'),
-      body('restaurant')
-        .notEmpty()
-        .withMessage('Restaurant ID is required'),
-      body('category')
-        .notEmpty()
-        .withMessage('Category ID is required'),
+      body('description').notEmpty().withMessage('Food item description is required'),
+      body('price').isNumeric().withMessage('Price must be a number').isFloat({ min: 0 }),
+      body('restaurant').notEmpty().withMessage('Restaurant ID is required'),
+      body('category').notEmpty().withMessage('Category ID is required'),
       validateRequest,
     ],
     createFoodItem
   );
+
+router.post(
+  '/:id/upload-image',
+  protect, upload.single('ccc'),
+  uploadFoodImage
+);
 
 router.get('/popular', getPopularFoodItems);
 
@@ -52,9 +50,7 @@ router.patch(
   protect,
   restaurant,
   [
-    body('isAvailable')
-      .isBoolean()
-      .withMessage('isAvailable must be a boolean value'),
+    body('isAvailable').isBoolean().withMessage('isAvailable must be a boolean value'),
     validateRequest,
   ],
   updateAvailability
