@@ -23,6 +23,8 @@ import { logger } from './utils/logger.js';
 import connectDB from './config/db.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import axios from 'axios';
+import https from 'https';
 
 dotenv.config();
 
@@ -57,6 +59,77 @@ app.use('/api/payment', paymentRoutes);
 app.get('/', (req, res) => {
   res.send('Food Delivery API is running...');
 });
+
+const RD_SERVICE_BASE = "http://127.0.0.1:11100";
+
+// Get RD device info
+async function getDeviceInfo() {
+  try {
+    const response = await axios.get(`${RD_SERVICE_BASE}/getinfo`);
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching device info:", err.message);
+    return null;
+  }
+}
+
+// Create PID options XML
+function createPidOptionsXML() {
+  return `
+  <PidOptions ver="1.0">
+      <Opts fCount="1" fType="0" iCount="0" pCount="0"
+            format="0" pidVer="2.0" timeout="20000"
+            env="P" wadh="" posh="UNKNOWN"/>
+  </PidOptions>
+  `.trim();
+}
+
+// Capture fingerprint data
+async function captureFingerprint(pidOptionsXml) {
+  try {
+    const response = await axios.post(`${RD_SERVICE_BASE}/capture`, pidOptionsXml, {
+      headers: { "Content-Type": "text/xml" },
+    });
+    return response.data;
+  } catch (err) {
+    console.error("Error during capture:", err.message);
+    return null;
+  }
+}
+
+// // Extract PID block (base64 encoded) from capture response
+// function extractPidBlock(xmlResponse) {
+//   try {
+//     const parser = new XMLParser({ ignoreAttributes: false });
+//     const json = parser.parse(xmlResponse);
+//     const pidData = json?.PidData?.Data;
+//     return pidData || "PID Data not found.";
+//   } catch (err) {
+//     console.error("Error parsing PID response:", err.message);
+//     return null;
+//   }
+// }
+
+// Main runner
+(async () => {
+  console.log("Getting RD device info...");
+  const deviceInfo = await getDeviceInfo();
+  console.log("Device Info:\n", deviceInfo);
+
+  console.log("\nCreating PID Options XML...");
+  const pidOptions = createPidOptionsXML();
+  console.log(pidOptions);
+
+  console.log("\nCapturing fingerprint...");
+  const captureResponse = await captureFingerprint(pidOptions);
+  console.log("Capture Response:\n", captureResponse);
+
+  // console.log("\nExtracting PID Block...");
+  // const pidBlock = extractPidBlock(captureResponse);
+  // console.log("PID Block:\n", pidBlock);
+})();
+
+
 
 app.use(notFound);
 app.use(errorHandler);

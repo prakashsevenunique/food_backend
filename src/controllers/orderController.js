@@ -20,7 +20,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     specialInstructions,
   } = req.body;
 
- 
   const cart = await Cart.findById(cartId);
   
   if (!cart) {
@@ -37,14 +36,12 @@ export const createOrder = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Cart is empty');
   }
-
   const restaurant = await Restaurant.findById(cart.restaurant);
   
   if (!restaurant) {
     res.status(404);
     throw new Error('Restaurant not found');
   }
-
   const orderItems = cart.items.map(item => ({
     foodItem: item.foodItem,
     quantity: item.quantity,
