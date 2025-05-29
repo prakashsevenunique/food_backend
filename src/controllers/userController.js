@@ -260,18 +260,27 @@ export const addFavorite = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 
+  // Check if restaurant is already in favorites
   if (user.favorites.includes(restaurantId)) {
     res.status(400);
     throw new Error("Restaurant already in favorites");
   }
 
+  // Add restaurant to favorites
   user.favorites.push(restaurantId);
   await user.save();
+
+  // Populate favorites with full restaurant data
+  const populatedUser = await User.findById(user._id).populate({
+    path: 'favorites',
+    model: 'Restaurant',
+    select: 'name address image rating', // Optional: select specific fields
+  });
 
   res.status(200).json({
     success: true,
     message: "Restaurant added to favorites",
-    data: user.favorites,
+    data: populatedUser.favorites,
   });
 });
 
@@ -302,14 +311,15 @@ export const removeFavorite = asyncHandler(async (req, res) => {
 });
 
 export const getFavorites = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).populate("favorites");
+  const user = await User.findById(req.user._id).populate("favorites").populate({path:"favorites",populate:{
+    path:"cuisine",select :"name"
+  }});
 
   if (!user) {
     res.status(404);
     throw new Error("User not found");
   }
 
-  // Add favorite: true to each restaurant object
   const favoritesWithFlag = user.favorites.map((restaurant) => ({
     ...restaurant.toObject(),
     favorite: true,
@@ -320,3 +330,77 @@ export const getFavorites = asyncHandler(async (req, res) => {
     data: favoritesWithFlag,
   });
 });
+
+export const addAddress = async (req, res) => {
+  try {
+    const userId = req.user._id; // assuming user ID from auth middleware
+    const { label, address, latitude, longitude } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.addresses.push({ label, address, latitude, longitude });
+    await user.save();
+
+    res.status(200).json({ message: "Address added successfully", addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const updateAddress = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const addressId = req.params.addressId;
+    const { label, address, latitude, longitude } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const addressToUpdate = user.addresses.id(addressId);
+    if (!addressToUpdate) return res.status(404).json({ message: "Address not found" });
+
+    addressToUpdate.label = label ?? addressToUpdate.label;
+    addressToUpdate.address = address ?? addressToUpdate.address;
+    addressToUpdate.latitude = latitude ?? addressToUpdate.latitude;
+    addressToUpdate.longitude = longitude ?? addressToUpdate.longitude;
+
+    await user.save();
+    res.status(200).json({ message: "Address updated successfully", addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const getAddresses = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const user = await User.findById(userId).select("addresses defaultAddress");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ addresses: user.addresses, defaultAddress: user.defaultAddress });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const deleteAddress = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const addressId = req.params.addressId;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const address = user.addresses.id(addressId);
+    if (!address) return res.status(404).json({ message: "Address not found" });
+
+    address.remove();
+    await user.save();
+
+    res.status(200).json({ message: "Address deleted successfully", addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

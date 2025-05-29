@@ -1,4 +1,5 @@
 import Cart from '../models/cartModel.js';
+import Coupon from '../models/Coupon.js';
 import FoodItem from '../models/foodItemModel.js';
 import Restaurant from '../models/restaurantModel.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -156,7 +157,6 @@ export const addToCart = asyncHandler(async (req, res) => {
   }
 
   await cart.save();
-  await recalculateCart(cart._id);
   
   const updatedCart = await Cart.findById(cart._id)
     .populate({
@@ -177,56 +177,62 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   const { quantity, customizations } = req.body;
   const { itemId } = req.params;
 
+  // 1. Find user's cart
   const cart = await Cart.findOne({ user: req.user._id });
-  
   if (!cart) {
     res.status(404);
     throw new Error('Cart not found');
   }
 
-  const cartItem = cart.items.id(itemId);
-  
-  if (!cartItem) {
+  // 2. Manually find the item in the cart.items array
+  const cartItemIndex = cart.items.findIndex(
+    (item) => item.foodItem.toString() === itemId
+  );
+  console.log(cartItemIndex)
+
+  if (cartItemIndex == -1) {
     res.status(404);
     throw new Error('Item not found in cart');
   }
 
+  const cartItem = cart.items[cartItemIndex];
+
+  // 3. Check food item availability
   const foodItem = await FoodItem.findById(cartItem.foodItem);
-  
   if (!foodItem) {
     res.status(404);
     throw new Error('Food item not found');
   }
-
   if (!foodItem.isAvailable) {
     res.status(400);
     throw new Error('Food item is currently unavailable');
   }
 
+  // 4. Calculate new prices
   const itemPrice = foodItem.discountedPrice || foodItem.price;
-  
   let customizationPrice = 0;
+
   if (customizations && customizations.length > 0) {
-    customizations.forEach(customization => {
+    for (const customization of customizations) {
       if (customization.options && customization.options.length > 0) {
-        customization.options.forEach(option => {
+        for (const option of customization.options) {
           customizationPrice += option.additionalPrice || 0;
-        });
+        }
       }
-    });
+    }
   }
 
-  cartItem.quantity = quantity;
+  // 5. Update the cart item
+  cart.items[cartItemIndex].quantity = quantity;
   if (customizations) {
-    cartItem.customizations = customizations;
+    cart.items[cartItemIndex].customizations = customizations;
   }
-  cartItem.itemPrice = itemPrice + customizationPrice;
-  cartItem.totalPrice = cartItem.itemPrice * quantity;
+  cart.items[cartItemIndex].itemPrice = itemPrice + customizationPrice;
+  cart.items[cartItemIndex].totalPrice =
+    cart.items[cartItemIndex].itemPrice * quantity;
 
   await cart.save();
-  
-  await recalculateCart(cart._id);
-  
+
   const updatedCart = await Cart.findById(cart._id)
     .populate({
       path: 'items.foodItem',
@@ -267,7 +273,6 @@ export const removeCartItem = asyncHandler(async (req, res) => {
   
   await cart.save();
   
-  await recalculateCart(cart._id);
   
   const updatedCart = await Cart.findById(cart._id)
     .populate({
