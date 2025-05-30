@@ -4,8 +4,8 @@ import Otp from "../models/otp.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
 import { logger } from "../utils/logger.js";
-
-
+// import Address from "../models/addressModel.js";
+import upload from "../config/multer.js";
 
 export const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -19,7 +19,9 @@ export const sendSMSController = async (req, res) => {
       return res.status(400).json({ message: "Mobile number is required" });
     }
     if (mobileNumber.length != 10) {
-      return res.status(400).json({ message: "Mobile number must be 10 digit" });
+      return res
+        .status(400)
+        .json({ message: "Mobile number must be 10 digit" });
     }
     const otp = generateOtp();
 
@@ -113,7 +115,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
   if (user) {
     res.json({
       success: true,
-      user
+      user,
     });
   } else {
     res.status(404);
@@ -155,8 +157,9 @@ export const updateUserTextOnly = asyncHandler(async (req, res) => {
       _id: updatedUser._id,
       name: updatedUser.fullName,
       mobileNumber: updatedUser.mobileNumber,
+      email: updatedUser.email,
       role: updatedUser.role,
-      profilePicture: updatedUser.profilePicture
+      profilePicture: updatedUser.profilePicture,
     },
   });
 });

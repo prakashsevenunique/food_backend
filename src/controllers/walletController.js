@@ -1,7 +1,7 @@
-import asyncHandler from '../utils/asyncHandler.js';
-import mongoose from 'mongoose';
-import WalletTransaction from '../models/walletModel.js';
-import Order from '../models/orderModel.js';
+import asyncHandler from "../utils/asyncHandler.js";
+import mongoose from "mongoose";
+import WalletTransaction from "../models/walletModel.js";
+import Order from "../models/orderModel.js";
 
 export const getWallet = asyncHandler(async (req, res) => {
   const userId = req.user._id;
@@ -11,16 +11,21 @@ export const getWallet = asyncHandler(async (req, res) => {
     {
       $group: {
         _id: null,
-        totalCredit: { $sum: { $cond: [{ $eq: ['$type', 'credit'] }, '$amount', 0] } },
-        totalDebit: { $sum: { $cond: [{ $eq: ['$type', 'debit'] }, '$amount', 0] } }
-      }
+        totalCredit: {
+          $sum: { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] },
+        },
+        totalDebit: {
+          $sum: { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] },
+        },
+      },
     },
     {
       $project: {
         _id: 0,
-        balance: { $subtract: ['$totalCredit', '$totalDebit'] }
-      }
-    }
+        totalCredit: 1,
+        totalDebit: 1,
+      },
+    },
   ]);
 
   const recentTransactions = await WalletTransaction.find({ userId })
@@ -30,9 +35,10 @@ export const getWallet = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: {
-      balance: summary?.balance || 0,
-      transactions: recentTransactions
-    }
+      balance: summary,
+
+      transactions: recentTransactions,
+    },
   });
 });
 
@@ -42,14 +48,14 @@ export const creditWallet = asyncHandler(async (req, res) => {
 
   const tx = await WalletTransaction.create({
     userId,
-    type: 'credit',
+    type: "credit",
     amount,
     description,
     orderId,
-    meta
+    meta,
   });
 
-  res.json({ success: true, message: 'Wallet credited', transaction: tx });
+  res.json({ success: true, message: "Wallet credited", transaction: tx });
 });
 
 export const debitWallet = asyncHandler(async (req, res) => {
@@ -61,34 +67,40 @@ export const debitWallet = asyncHandler(async (req, res) => {
     {
       $group: {
         _id: null,
-        totalCredit: { $sum: { $cond: [{ $eq: ['$type', 'credit'] }, '$amount', 0] } },
-        totalDebit: { $sum: { $cond: [{ $eq: ['$type', 'debit'] }, '$amount', 0] } }
-      }
+        totalCredit: {
+          $sum: { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] },
+        },
+        totalDebit: {
+          $sum: { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] },
+        },
+      },
     },
     {
       $project: {
         _id: 0,
-        balance: { $subtract: ['$totalCredit', '$totalDebit'] }
-      }
-    }
+        balance: { $subtract: ["$totalCredit", "$totalDebit"] },
+      },
+    },
   ]);
 
   const currentBalance = summary?.balance || 0;
 
   if (currentBalance < amount) {
-    return res.status(400).json({ success: false, message: 'Insufficient wallet balance' });
+    return res
+      .status(400)
+      .json({ success: false, message: "Insufficient wallet balance" });
   }
 
   const tx = await WalletTransaction.create({
     userId,
-    type: 'debit',
+    type: "debit",
     amount,
     description,
     orderId,
-    meta
+    meta,
   });
 
-  res.json({ success: true, message: 'Wallet debited', transaction: tx });
+  res.json({ success: true, message: "Wallet debited", transaction: tx });
 });
 
 export const getAllWallets = asyncHandler(async (req, res) => {
@@ -105,20 +117,24 @@ export const getAllWallets = asyncHandler(async (req, res) => {
     matchStage,
     {
       $group: {
-        _id: '$userId',
-        totalCredit: { $sum: { $cond: [{ $eq: ['$type', 'credit'] }, '$amount', 0] } },
-        totalDebit: { $sum: { $cond: [{ $eq: ['$type', 'debit'] }, '$amount', 0] } }
-      }
+        _id: "$userId",
+        totalCredit: {
+          $sum: { $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0] },
+        },
+        totalDebit: {
+          $sum: { $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0] },
+        },
+      },
     },
     {
       $project: {
-        userId: '$_id',
+        userId: "$_id",
         _id: 0,
-        balance: { $subtract: ['$totalCredit', '$totalDebit'] }
-      }
+        balance: { $subtract: ["$totalCredit", "$totalDebit"] },
+      },
     },
     { $sort: { balance: -1 } },
-    ...(userId ? [] : [{ $skip: skip }, { $limit: limit }])
+    ...(userId ? [] : [{ $skip: skip }, { $limit: limit }]),
   ]);
 
   res.json({ success: true, page, wallets });
@@ -128,27 +144,32 @@ export const refundWalletOnCancel = asyncHandler(async (req, res) => {
   const { orderId } = req.body;
 
   const order = await Order.findById(orderId);
-  if (!order || order.status !== 'cancelled') {
-    return res.status(400).json({ success: false, message: 'Invalid or un-cancelled order' });
+  if (!order || order.status !== "cancelled") {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid or un-cancelled order" });
   }
 
   const existingRefund = await WalletTransaction.findOne({
     orderId,
-    type: 'credit',
-    description: 'Refund for cancelled order'
+    type: "credit",
+    description: "Refund for cancelled order",
   });
 
   if (existingRefund) {
-    return res.status(409).json({ success: false, message: 'Refund already processed for this order' });
+    return res.status(409).json({
+      success: false,
+      message: "Refund already processed for this order",
+    });
   }
 
   const tx = await WalletTransaction.create({
     userId: order.userId,
-    type: 'credit',
+    type: "credit",
     amount: order.totalAmount,
-    description: 'Refund for cancelled order',
-    orderId
+    description: "Refund for cancelled order",
+    orderId,
   });
 
-  res.json({ success: true, message: 'Refund processed', transaction: tx });
+  res.json({ success: true, message: "Refund processed", transaction: tx });
 });

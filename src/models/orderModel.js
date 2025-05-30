@@ -97,8 +97,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
     },
     deliveryAddress: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Address',
+      type: String,
       required: true,
     },
     deliveryPartner: {
