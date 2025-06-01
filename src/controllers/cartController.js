@@ -55,7 +55,7 @@ export const getCart = asyncHandler(async (req, res) => {
         })
         .populate('restaurant', 'name deliveryFee minOrderAmount');
         
-      await recalculateCart(cart._id);
+      // await recalculateCart(cart._id);
       cart = await Cart.findById(cart._id)
         .populate({
           path: 'items.foodItem',
