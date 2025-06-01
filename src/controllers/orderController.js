@@ -5,6 +5,7 @@ import FoodItem from '../models/foodItemModel.js';
 import User from '../models/userModel.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
+import Address from '../models/Address.js';
 
 const generateOrderNumber = () => {
   const timestamp = new Date().getTime().toString().slice(-8);

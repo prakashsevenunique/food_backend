@@ -79,97 +79,82 @@ export const getCart = asyncHandler(async (req, res) => {
 export const addToCart = asyncHandler(async (req, res) => {
   const { foodItemId, quantity, customizations } = req.body;
 
+  // 1. Validate food item exists and is available
   const foodItem = await FoodItem.findById(foodItemId);
-  
-  if (!foodItem) {
-    res.status(404);
-    throw new Error('Food item not found');
-  }
+  if (!foodItem) throw new ErrorResponse('Food item not found', 404);
+  if (!foodItem.isAvailable) throw new ErrorResponse('Food item unavailable', 400);
 
-  if (!foodItem.isAvailable) {
-    res.status(400);
-    throw new Error('Food item is currently unavailable');
-  }
-
+  // 2. Get associated restaurant (required)
   const restaurant = await Restaurant.findById(foodItem.restaurant);
-  
-  if (!restaurant) {
-    res.status(404);
-    throw new Error('Restaurant not found');
-  }
+  if (!restaurant) throw new ErrorResponse('Restaurant not found', 404);
 
+  // 3. Find or create cart with RESTAURANT ENFORCEMENT
   let cart = await Cart.findOne({ user: req.user._id });
 
+  // Case 1: New cart - create with restaurant
   if (!cart) {
     cart = await Cart.create({
       user: req.user._id,
-      restaurant: restaurant._id,
+      restaurant: restaurant._id, // REQUIRED by schema
       items: [],
-      totalItems: 0,
-      subtotal: 0,
       deliveryFee: restaurant.deliveryFee,
-      finalAmount: 0,
+      subtotal: 0,
+      finalAmount: restaurant.deliveryFee
     });
+  } 
+  // Case 2: Existing cart with different restaurant
+  else if (cart.restaurant.toString() !== restaurant._id.toString()) {
+    throw new ErrorResponse('Clear cart to order from different restaurant', 400);
   }
 
-  if (cart.restaurant && cart.restaurant.toString() !== restaurant._id.toString() && cart.items.length > 0) {
-    res.status(400);
-    throw new Error('Cannot add items from different restaurants. Please clear your cart first.');
-  }
+  // 4. Calculate prices
+  const basePrice = foodItem.discountedPrice || foodItem.price;
+  const customizationPrice = (customizations || []).reduce((total, custom) => (
+    total + (custom.options || []).reduce((sum, opt) => (
+      sum + (opt.additionalPrice || 0)
+    ), 0)
+  ), 0);
 
-  if (!cart.restaurant || cart.items.length === 0) {
-    cart.restaurant = restaurant._id;
-    cart.deliveryFee = restaurant.deliveryFee;
-  }
+  const totalPrice = (basePrice + customizationPrice) * quantity;
 
-  const itemPrice = foodItem.discountedPrice || foodItem.price;
-  
-  let customizationPrice = 0;
-  if (customizations && customizations.length > 0) {
-    customizations.forEach(customization => {
-      if (customization.options && customization.options.length > 0) {
-        customization.options.forEach(option => {
-          customizationPrice += option.additionalPrice || 0;
-        });
-      }
-    });
-  }
+  // 5. Update cart items
+  const itemIndex = cart.items.findIndex(item => (
+    item.foodItem.toString() === foodItemId
+  ));
 
-  const totalPrice = (itemPrice + customizationPrice) * quantity;
-
-  const existingItemIndex = cart.items.findIndex(
-    item => item.foodItem.toString() === foodItemId
-  );
-
-  if (existingItemIndex > -1) {
-    cart.items[existingItemIndex].quantity = quantity;
-    cart.items[existingItemIndex].customizations = customizations || [];
-    cart.items[existingItemIndex].itemPrice = itemPrice + customizationPrice;
-    cart.items[existingItemIndex].totalPrice = totalPrice;
+  if (itemIndex > -1) {
+    cart.items[itemIndex] = {
+      foodItem: foodItemId,
+      quantity,
+      customizations: customizations || [],
+      itemPrice: basePrice + customizationPrice,
+      totalPrice
+    };
   } else {
     cart.items.push({
       foodItem: foodItemId,
       quantity,
       customizations: customizations || [],
-      itemPrice: itemPrice + customizationPrice,
-      totalPrice,
+      itemPrice: basePrice + customizationPrice,
+      totalPrice
     });
   }
 
-  await cart.save();
-  
-  const updatedCart = await Cart.findById(cart._id)
-    .populate({
-      path: 'items.foodItem',
-      select: 'name price discountedPrice image veg',
-    })
-    .populate('restaurant', 'name deliveryFee minOrderAmount');
+  // 6. Recalculate cart totals
+  cart.totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+  cart.subtotal = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
+  cart.finalAmount = cart.subtotal + cart.deliveryFee;
 
-  logger.info(`Item added to cart: ${req.user._id} - ${foodItemId}`);
+  // 7. Save and return with populated restaurant
+  const savedCart = await cart.save();
+  
+  const result = await Cart.findById(savedCart._id)
+    .populate('restaurant', '_id name deliveryFee')
+    .populate('items.foodItem', 'name price image');
 
   res.status(200).json({
     success: true,
-    data: updatedCart,
+    data: result
   });
 });
 

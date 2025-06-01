@@ -48,7 +48,7 @@ const cartSchema = new mongoose.Schema(
     restaurant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Restaurant',
-      required: false, 
+      required: true, // CHANGED FROM false TO true
     },
     items: [cartItemSchema],
     totalItems: {

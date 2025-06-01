@@ -282,7 +282,8 @@ export const getPopularFoodItems = asyncHandler(async (req, res) => {
     .sort({ 'ratings.average': -1 })
     .limit(10)
     .populate('restaurant', 'name')
-    .populate('category', 'name');
+    .populate('category', 'name')
+    .populate('quantity', 1)
 
   res.json({
     success: true,
