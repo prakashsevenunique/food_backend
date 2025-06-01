@@ -13,6 +13,8 @@ const generateOrderNumber = () => {
   return `ORD-${timestamp}-${random}`;
 };
 
+import WalletTransaction from '../models/walletModel.js'; // ensure correct path
+
 export const createOrder = asyncHandler(async (req, res) => {
   const {
     cartId,
@@ -22,7 +24,6 @@ export const createOrder = asyncHandler(async (req, res) => {
   } = req.body;
 
   const cart = await Cart.findById(cartId);
-  
   if (!cart) {
     res.status(404);
     throw new Error('Cart not found');
@@ -37,12 +38,13 @@ export const createOrder = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Cart is empty');
   }
+
   const restaurant = await Restaurant.findById(cart.restaurant);
-  
   if (!restaurant) {
     res.status(404);
     throw new Error('Restaurant not found');
   }
+
   const orderItems = cart.items.map(item => ({
     foodItem: item.foodItem,
     quantity: item.quantity,
@@ -64,7 +66,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     finalAmount: cart.finalAmount,
     couponApplied: cart.couponApplied,
     paymentMethod,
-    paymentStatus: paymentMethod === 'COD' ? 'PENDING' : 'PENDING',
+    paymentStatus: paymentMethod === 'WALLET' ? 'PAID' : 'PENDING',
     deliveryAddress,
     specialInstructions,
     orderStatus: 'PLACED',
@@ -76,20 +78,48 @@ export const createOrder = asyncHandler(async (req, res) => {
     }],
   });
 
-  if (order) {
-    await Cart.findByIdAndDelete(cartId);
-    
-    logger.info(`New order created: ${order._id}`);
-
-    res.status(201).json({
-      success: true,
-      data: order,
-    });
-  } else {
+  if (!order) {
     res.status(400);
     throw new Error('Invalid order data');
   }
+
+  // 💰 Handle Wallet Payment
+  if (paymentMethod === 'WALLET') {
+    const user = await User.findById(req.user._id);
+
+    if (user.walletBalance < order.finalAmount) {
+      await order.remove(); // Rollback order
+      res.status(400);
+      throw new Error('Insufficient wallet balance');
+    }
+
+    // Deduct from wallet
+    user.walletBalance -= order.finalAmount;
+    await user.save();
+
+    // Create wallet transaction
+    await WalletTransaction.create({
+      userId: user._id,
+      type: 'debit',
+      amount: order.finalAmount,
+      status: 'completed',
+      paymentMethod: 'wallet',
+      description: `Payment for Order #${order.orderNumber}`,
+      orderId: order._id,
+    });
+  }
+
+  // 🛒 Clear Cart
+  await Cart.findByIdAndDelete(cartId);
+
+  logger.info(`New order created: ${order._id}`);
+
+  res.status(201).json({
+    success: true,
+    data: order,
+  });
 });
+
 
 export const getMyOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
