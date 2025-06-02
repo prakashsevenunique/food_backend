@@ -283,7 +283,6 @@ export const getPopularFoodItems = asyncHandler(async (req, res) => {
     .limit(10)
     .populate('restaurant', 'name')
     .populate('category', 'name')
-    .populate('quantity', 1)
 
   res.json({
     success: true,
