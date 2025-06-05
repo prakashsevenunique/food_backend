@@ -18,6 +18,7 @@ import couponRoutes from "./routes/couponRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import riderRoutes from "./routes/riderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 import { logger } from "./utils/logger.js";
@@ -53,6 +54,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use("/api/riders", riderRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/", (req, res) => {
   res.send("Food Delivery API is running...");

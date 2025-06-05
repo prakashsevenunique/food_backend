@@ -202,6 +202,7 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
     throw new Error('Restaurant not found');
   }
 });
+
 export const createRestaurant = asyncHandler(async (req, res) => {
   const {
     name,

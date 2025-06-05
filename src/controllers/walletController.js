@@ -105,7 +105,7 @@ export const debitWallet = asyncHandler(async (req, res) => {
 
 export const getAllWallets = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = 20;
+  const limit = 10;
   const skip = (page - 1) * limit;
   const { userId } = req.query;
 
