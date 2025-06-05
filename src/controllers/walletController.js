@@ -173,3 +173,62 @@ export const refundWalletOnCancel = asyncHandler(async (req, res) => {
 
   res.json({ success: true, message: "Refund processed", transaction: tx });
 });
+
+export const getUserTransactions = async (req, res) => {
+  try {
+    const userId = req.user._id; // assumes auth middleware sets `req.user`
+
+    const {
+      type,
+      status,
+      paymentMethod,
+      startDate,
+      endDate,
+      search,
+      sortBy = 'createdAt',
+      order = 'desc',
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    console.log("User Transactions Query:", req.query);
+
+    const query = { userId };
+
+    if (type) query.type = type;
+    if (status) query.status = status;
+    if (paymentMethod) query.paymentMethod = paymentMethod;
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    if (search) {
+      query.$or = [
+        { description: { $regex: search, $options: 'i' } },
+        { utr: { $regex: search, $options: 'i' } },
+        { trxId: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const transactions = await WalletTransaction.find(query)
+      .sort({ [sortBy]: order === 'asc' ? 1 : -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await WalletTransaction.countDocuments(query);
+
+    res.json({
+      success: true,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      data: transactions,
+    });
+  } catch (error) {
+    console.error('Get Transactions Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};

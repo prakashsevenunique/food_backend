@@ -7,6 +7,7 @@ import {
   debitWallet,
   getAllWallets,
   refundWalletOnCancel,
+  getUserTransactions
 } from '../controllers/walletController.js';
 
 import { protect, admin } from '../middleware/authMiddleware.js';
@@ -19,5 +20,6 @@ router.post('/debit', debitWallet);
 
 router.get('/admin/wallets', admin, getAllWallets);
 router.post('/admin/refund', admin, refundWalletOnCancel);
+router.get('/all', getUserTransactions);
 
 export default router;

@@ -19,6 +19,7 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     preparationTime,
     serveSize,
     customizations,
+    isAvailable  // 🟢 Accept availability status from request
   } = req.body;
 
   const restaurant = await Restaurant.findById(restaurantId);
@@ -51,6 +52,7 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     preparationTime,
     serveSize,
     customizations,
+    isAvailable  // 🟢 Add to DB if present in request
   });
 
   if (foodItem) {
