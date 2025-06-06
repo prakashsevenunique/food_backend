@@ -176,9 +176,9 @@ export const refundWalletOnCancel = asyncHandler(async (req, res) => {
 
 export const getUserTransactions = async (req, res) => {
   try {
-    const userId = req.user._id; // assumes auth middleware sets `req.user`
-
     const {
+      userId, // ✅ NEW: allows admin to see all users or specific user
+      restaurantId, // ✅ OPTIONAL: only if used in your schema
       type,
       status,
       paymentMethod,
@@ -193,7 +193,18 @@ export const getUserTransactions = async (req, res) => {
 
     console.log("User Transactions Query:", req.query);
 
-    const query = { userId };
+    const query = {};
+
+    // ✅ If userId is passed (admin), use that; otherwise fallback to logged-in user
+    if (req.user?.role === 'admin') {
+      if (userId) query.userId = userId;
+    } else {
+      query.userId = req.user._id;
+    }
+
+    if (restaurantId) {
+      query.restaurantId = restaurantId; // ✅ if this field exists
+    }
 
     if (type) query.type = type;
     if (status) query.status = status;

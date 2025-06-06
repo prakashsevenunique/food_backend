@@ -6,6 +6,7 @@ import User from '../models/userModel.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 import Address from '../models/Address.js';
+import Rider from '../models/riderModel.js';
 
 const generateOrderNumber = () => {
   const timestamp = new Date().getTime().toString().slice(-8);
@@ -279,48 +280,56 @@ export const cancelOrder = asyncHandler(async (req, res) => {
 
 export const assignDeliveryPartner = asyncHandler(async (req, res) => {
   const { deliveryPartnerId } = req.body;
-  const order = await Order.findById(req.params.id);
+  const orderId = req.params.id;
 
+  // 1. Find order
+  const order = await Order.findById(orderId);
   if (!order) {
     res.status(404);
-    throw new Error('Order not found');
+    throw new Error("Order not found");
   }
 
+  // 2. Validate restaurant ownership
   const restaurant = await Restaurant.findById(order.restaurant);
-  
-  if (
-    restaurant.owner.toString() !== req.user._id.toString() &&
-    req.user.role !== 'admin'
-  ) {
+  if (!restaurant) {
+    res.status(404);
+    throw new Error("Restaurant not found");
+  }
+
+  const isOwner = restaurant.owner.toString() === req.user._id.toString();
+  const isAdmin = req.user.role === "admin";
+
+  if (!isOwner && !isAdmin) {
     res.status(403);
-    throw new Error('Not authorized to assign delivery partner');
+    throw new Error("Not authorized to assign delivery partner");
   }
 
-  const deliveryPartner = await User.findById(deliveryPartnerId);
-  
-  if (!deliveryPartner || deliveryPartner.role !== 'delivery') {
+  // 3. Validate delivery partner (from Rider model)
+  const deliveryPartner = await Rider.findById(deliveryPartnerId);
+  if (!deliveryPartner) {
     res.status(400);
-    throw new Error('Invalid delivery partner');
+    throw new Error("Invalid delivery partner ID");
   }
 
+  // 4. Assign and update order status
   order.deliveryPartner = deliveryPartnerId;
-  
-  if (order.orderStatus === 'READY_FOR_PICKUP') {
-    order.orderStatus = 'OUT_FOR_DELIVERY';
-    
+
+  if (order.orderStatus === "READY_FOR_PICKUP") {
+    order.orderStatus = "OUT_FOR_DELIVERY";
     order.orderStatusTimeline.push({
-      status: 'OUT_FOR_DELIVERY',
+      status: "OUT_FOR_DELIVERY",
       timestamp: new Date(),
-      note: 'Order picked up by delivery partner',
+      note: "Order picked up by delivery partner",
     });
   }
 
+  // 5. Save and respond
   await order.save();
-  logger.info(`Delivery partner assigned to order: ${order._id}`);
+  logger.info(`Delivery partner assigned to order ${orderId}`);
 
   res.json({
     success: true,
-    message: 'Delivery partner assigned successfully',
+    message: "Delivery partner assigned successfully",
     data: order,
   });
 });
