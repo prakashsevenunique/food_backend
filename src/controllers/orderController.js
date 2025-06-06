@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import Address from '../models/Address.js';
 import Rider from '../models/riderModel.js';
 
+
 const generateOrderNumber = () => {
   const timestamp = new Date().getTime().toString().slice(-8);
   const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
@@ -121,7 +122,6 @@ export const createOrder = asyncHandler(async (req, res) => {
   });
 });
 
-
 export const getMyOrders = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -130,6 +130,7 @@ export const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ user: req.user._id })
     .populate('restaurant', 'name')
     .populate('deliveryAddress')
+    .populate('user', 'name email') // ✅ Add this line
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -356,7 +357,7 @@ export const getRestaurantOrders = asyncHandler(async (req, res) => {
   }
 
   const orders = await Order.find(filter)
-    .populate('user', 'name phone')
+    .populate('user', 'name email phone')
     .populate('restaurant', 'name')
     .populate('deliveryAddress')
     .populate('deliveryPartner', 'name phone')
@@ -441,7 +442,7 @@ export const getDeliveryOrders = asyncHandler(async (req, res) => {
   }
 
   const orders = await Order.find(filter)
-    .populate('user', 'name phone')
+    .populate('user', 'name email phone')
     .populate('restaurant', 'name address contact')
     .populate('deliveryAddress')
     .sort(req.query.sort ? { createdAt: -1 } : { estimatedDeliveryTime: 1 })
