@@ -10,8 +10,12 @@ const riderSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  email: String,
-  vehicleNumber: String,
+  email: {
+    type: String,
+  },
+  vehicleNumber: {
+    type: String,
+  },
   currentLocation: {
     type: {
       type: String,
@@ -19,7 +23,7 @@ const riderSchema = new mongoose.Schema({
       default: 'Point',
     },
     coordinates: {
-      type: [Number], 
+      type: [Number],
       default: [0, 0],
     },
   },
@@ -34,6 +38,18 @@ const riderSchema = new mongoose.Schema({
       ref: "Order",
     },
   ],
+  totalDeliveries: {
+    type: Number,
+    default: 0,
+  },
+  rating: {
+    type: Number,
+    default: 0,
+  },
+  earnings: {
+    type: Number,
+    default: 0,
+  },
 }, {
   timestamps: true,
 });
