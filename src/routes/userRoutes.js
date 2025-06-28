@@ -14,7 +14,8 @@ import {
   addAddress,
   updateAddress,
   getAddresses,
-  deleteAddress
+  deleteAddress,
+  deleteUserByIdNoToken
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import upload from '../config/multer.js';
@@ -50,5 +51,7 @@ router.route('/addresses/:addressId')
 router.get('/:id', protect, getUserById);
 router.get('/', protect, admin, getUsers);
 router.delete('/:id', protect, admin, deleteUser);
+
+router.delete("/delete/:id", deleteUserByIdNoToken);
 
 export default router;

@@ -10,10 +10,11 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
+      required: false,
       lowercase: true,
       trim: true,
       match: [
-        /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/,
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/,
         "Please provide a valid email",
       ],
     },
@@ -21,6 +22,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
       unique: true,
+      match: [/^\d{10}$/, "Mobile number must be 10 digits"],
     },
     role: {
       type: String,
@@ -43,7 +45,6 @@ const userSchema = new mongoose.Schema(
     },
     profilePicture: {
       type: String,
-      required: false,
     },
     favorites: [
       {
@@ -51,25 +52,35 @@ const userSchema = new mongoose.Schema(
         ref: "Restaurant",
       },
     ],
+
+    // ✅ Soft delete flag
     isActive: {
       type: Boolean,
       default: true,
     },
+
     isVerified: {
       type: Boolean,
       default: false,
     },
-    refreshToken: String,
+
+    refreshToken: {
+      type: String,
+    },
+
     wallet: {
       type: Number,
       default: 0,
     },
+
     walletLastUpdated: {
       type: Date,
       default: Date.now,
     },
+
     password: {
       type: String,
+      required: false,
     },
   },
   {
@@ -77,17 +88,24 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// ✅ Hash password before saving (if modified)
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
+// ✅ Method to match hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// ✅ Optional: Exclude inactive users from default queries
+// userSchema.pre(/^find/, function (next) {
+//   this.find({ isActive: { $ne: false } });
+//   next();
+// });
 
 const User = mongoose.model("User", userSchema);
 

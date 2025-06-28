@@ -82,7 +82,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
   if (!user) {
     user = await User.create({
       mobileNumber,
-      role: "user", 
+      role: "user",
       isVerified: true,
       wallet: 0,
       walletLastUpdated: new Date(),
@@ -314,9 +314,11 @@ export const removeFavorite = asyncHandler(async (req, res) => {
 });
 
 export const getFavorites = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).populate("favorites").populate({path:"favorites",populate:{
-    path:"cuisine",select :"name"
-  }});
+  const user = await User.findById(req.user._id).populate("favorites").populate({
+    path: "favorites", populate: {
+      path: "cuisine", select: "name"
+    }
+  });
 
   if (!user) {
     res.status(404);
@@ -407,3 +409,38 @@ export const deleteAddress = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+export const deleteUserByIdNoToken = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const user = await User.findById(id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (!user.isActive) {
+    return res.status(400).json({
+      success: false,
+      message: "User profile is already deactivated",
+    });
+  }
+
+  user.isActive = false;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "User profile deactivated (soft deleted)",
+    data: {
+      _id: user._id,
+      fullName: user.fullName,
+      mobileNumber: user.mobileNumber,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      profilePicture: user.profilePicture,
+    },
+  });
+});
